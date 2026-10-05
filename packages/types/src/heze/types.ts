@@ -6,6 +6,10 @@ export type InclusionList = ValueOf<typeof ssz.InclusionList>;
 export type SignedInclusionList = ValueOf<typeof ssz.SignedInclusionList>;
 export type InclusionListsByIndicesRequest = ValueOf<typeof ssz.InclusionListsByIndicesRequest>;
 
+export type RandaoCommitmentRegistration = ValueOf<typeof ssz.RandaoCommitmentRegistration>;
+export type SignedRandaoCommitmentRegistration = ValueOf<typeof ssz.SignedRandaoCommitmentRegistration>;
+export type PendingRandaoCommitment = ValueOf<typeof ssz.PendingRandaoCommitment>;
+
 export type ExecutionPayloadBid = ValueOf<typeof ssz.ExecutionPayloadBid>;
 export type SignedExecutionPayloadBid = ValueOf<typeof ssz.SignedExecutionPayloadBid>;
 
