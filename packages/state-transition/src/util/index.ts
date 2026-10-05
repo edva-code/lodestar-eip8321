@@ -3,6 +3,7 @@ export * from "./array.js";
 export * from "./attestation.js";
 export * from "./attesterStatus.js";
 export * from "./balance.js";
+export * from "./blake3.js";
 export * from "./blindedBlock.js";
 export * from "./blockRoot.js";
 export * from "./capella.js";
