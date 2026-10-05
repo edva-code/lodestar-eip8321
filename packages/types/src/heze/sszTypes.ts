@@ -112,7 +112,7 @@ export const BeaconState = new ProgressiveContainerType(
     ...gloasSsz.BeaconState.fields,
     latestExecutionPayloadBid: ExecutionPayloadBid, // [Modified in Heze:EIP7805]
     randaoCommitments: RandaoCommitments, // [New in Heze:EIP8321]
-    pendingRandaoCommitments: PendingRandaoCommitments, // [New in Heze:EIP7805]
+    pendingRandaoCommitments: PendingRandaoCommitments, // [New in Heze:EIP8321]
   },
   activeFields(48),
   {typeName: "BeaconState", jsonCase: "eth2"}
