@@ -91,6 +91,7 @@ function stringifyGossipTopicType(topic: GossipTopic): string {
     case GossipType.payload_attestation_message:
     case GossipType.execution_payload_bid:
     case GossipType.proposer_preferences:
+    case GossipType.randao_commitment_registration:
       return topic.type;
     case GossipType.beacon_attestation:
     case GossipType.sync_committee:
@@ -144,6 +145,8 @@ export function getGossipSSZType(topic: GossipTopic) {
       return isForkPostGloas(fork) ? sszTypesFor(fork).SignedExecutionPayloadBid : ssz.gloas.SignedExecutionPayloadBid;
     case GossipType.proposer_preferences:
       return ssz.gloas.SignedProposerPreferences;
+    case GossipType.randao_commitment_registration:
+      return ssz.heze.SignedRandaoCommitmentRegistration;
   }
 }
 
@@ -235,6 +238,7 @@ export function parseGossipTopic(forkDigestContext: ForkDigestContext, topicStr:
       case GossipType.payload_attestation_message:
       case GossipType.execution_payload_bid:
       case GossipType.proposer_preferences:
+      case GossipType.randao_commitment_registration:
         return {type: gossipTypeStr, boundary, encoding};
     }
 
@@ -291,7 +295,9 @@ export function getCoreTopicsAtFork(
     topics.push({type: GossipType.execution_payload_bid});
     topics.push({type: GossipType.proposer_preferences});
   }
-
+  if (ForkSeq[fork] >= ForkSeq.heze) {
+    topics.push({type: GossipType.randao_commitment_registration});
+  }
   // After fulu also track data_column_sidecar_{index}
   if (ForkSeq[fork] >= ForkSeq.fulu) {
     topics.push(...getDataColumnSidecarTopics(networkConfig, opts.subscribeAllColumnSubnets));
@@ -409,6 +415,7 @@ export const gossipTopicIgnoreDuplicatePublishError: Record<GossipType, boolean>
   [GossipType.payload_attestation_message]: true,
   [GossipType.execution_payload_bid]: true,
   [GossipType.proposer_preferences]: true,
+  [GossipType.randao_commitment_registration]: true,
 };
 
 /**
@@ -447,4 +454,5 @@ export const gossipTopicAllowPublishToZeroPeers: Record<GossipType, boolean> = {
   [GossipType.payload_attestation_message]: false,
   [GossipType.execution_payload_bid]: false,
   [GossipType.proposer_preferences]: false,
+  [GossipType.randao_commitment_registration]: false,
 };

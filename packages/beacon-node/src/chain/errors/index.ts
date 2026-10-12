@@ -11,5 +11,6 @@ export * from "./gossipValidation.js";
 export * from "./payloadAttestation.js";
 export * from "./proposerPreferences.js";
 export * from "./proposerSlashingError.js";
+export * from "./randaoCommitmentRegistrationError.js";
 export * from "./syncCommitteeError.js";
 export * from "./voluntaryExitError.js";

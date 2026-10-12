@@ -34,7 +34,7 @@ import {computeMaxGloasDataColumnSidecarSize} from "../../../../src/util/sszByte
 import {getValidPeerId} from "../../../utils/peer.js";
 
 describe("network / gossip / topic", () => {
-  const config = createBeaconConfig({...chainConfig, GLOAS_FORK_EPOCH: 700000}, ZERO_HASH);
+  const config = createBeaconConfig({...chainConfig, GLOAS_FORK_EPOCH: 700000, HEZE_FORK_EPOCH: 700001}, ZERO_HASH);
   const encoding = GossipEncoding.ssz_snappy;
   const maxDataColumnSidecarSize = computeMaxGloasDataColumnSidecarSize(config);
   const getMaxSize = (topic: Parameters<typeof getGossipSSZType>[0], cfg = config): number =>
@@ -206,6 +206,16 @@ describe("network / gossip / topic", () => {
           encoding,
         },
         topicStr: "/eth2/a41d57bd/proposer_preferences/ssz_snappy",
+      },
+    ],
+    [GossipType.randao_commitment_registration]: [
+      {
+        topic: {
+          type: GossipType.randao_commitment_registration,
+          boundary: {fork: ForkName.heze, epoch: config.HEZE_FORK_EPOCH},
+          encoding,
+        },
+        topicStr: "/eth2/29065f35/randao_commitment_registration/ssz_snappy",
       },
     ],
   };
@@ -439,6 +449,7 @@ describe("network / gossip / topic", () => {
         ELECTRA_FORK_EPOCH: 5,
         FULU_FORK_EPOCH: 6,
         GLOAS_FORK_EPOCH: 7,
+        HEZE_FORK_EPOCH: 8,
       },
       ZERO_HASH
     );

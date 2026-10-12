@@ -16,6 +16,7 @@ import {
   PayloadAttestationErrorCode,
   ProposerPreferencesErrorCode,
   ProposerSlashingErrorCode,
+  RandaoCommitmentRegistrationErrorCode,
   SyncCommitteeErrorCode,
   VoluntaryExitErrorCode,
 } from "../../chain/errors/index.js";
@@ -97,6 +98,10 @@ const gossipRejectPeerAction: Record<GossipType, RejectPeerActionRule> = {
   [GossipType.voluntary_exit]: {
     default: PeerAction.HighToleranceError,
     byCode: {[VoluntaryExitErrorCode.INVALID_SIGNATURE]: PeerAction.Fatal},
+  },
+  [GossipType.randao_commitment_registration]: {
+    default: PeerAction.HighToleranceError,
+    byCode: {[RandaoCommitmentRegistrationErrorCode.INVALID_SIGNATURE]: PeerAction.Fatal},
   },
   [GossipType.bls_to_execution_change]: {
     default: PeerAction.HighToleranceError,

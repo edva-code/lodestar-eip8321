@@ -129,6 +129,7 @@ const executeGossipWorkOrderObj: Record<GossipType, WorkOpts> = {
   [GossipType.data_column_sidecar]: {bypassQueue: true},
   [GossipType.beacon_aggregate_and_proof]: {},
   [GossipType.voluntary_exit]: {},
+  [GossipType.randao_commitment_registration]: {},
   [GossipType.bls_to_execution_change]: {},
   [GossipType.beacon_attestation]: {},
   [GossipType.proposer_slashing]: {},

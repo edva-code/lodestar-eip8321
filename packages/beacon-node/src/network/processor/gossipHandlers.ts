@@ -83,6 +83,7 @@ import {validateLightClientFinalityUpdate} from "../../chain/validation/lightCli
 import {validateLightClientOptimisticUpdate} from "../../chain/validation/lightClientOptimisticUpdate.js";
 import {validateGossipPayloadAttestationMessage} from "../../chain/validation/payloadAttestationMessage.js";
 import {validateGossipProposerPreferences} from "../../chain/validation/proposerPreferences.js";
+import {validateGossipRandaoCommitmentRegistration} from "../../chain/validation/randaoCommitmentRegistration.js";
 import {OpSource} from "../../chain/validatorMonitor.js";
 import {Metrics} from "../../metrics/index.js";
 import {kzgCommitmentToVersionedHash} from "../../util/blobs.js";
@@ -1126,6 +1127,20 @@ function getSequentialHandlers(modules: ValidatorFnsModules, options: GossipHand
             e as Error
           );
         }
+      });
+    },
+
+    [GossipType.randao_commitment_registration]: async ({
+      gossipData,
+      topic,
+    }: GossipHandlerParamGeneric<GossipType.randao_commitment_registration>) => {
+      const {serializedData} = gossipData;
+      const signedRegistration = sszDeserialize(topic, serializedData);
+      await validateGossipRandaoCommitmentRegistration(chain, signedRegistration);
+
+      // Handler - deferred to next event loop so the validation result propagates first
+      callInNextEventLoop(() => {
+        chain.randaoCommitmentRegistrationPool.add(signedRegistration);
       });
     },
 

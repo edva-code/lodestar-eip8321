@@ -16,6 +16,7 @@ import {
   capella,
   deneb,
   gloas,
+  heze,
   phase0,
 } from "@lodestar/types";
 import {Logger} from "@lodestar/utils";
@@ -42,6 +43,7 @@ export enum GossipType {
   payload_attestation_message = "payload_attestation_message",
   execution_payload_bid = "execution_payload_bid",
   proposer_preferences = "proposer_preferences",
+  randao_commitment_registration = "randao_commitment_registration",
 }
 
 export type SequentialGossipType = Exclude<GossipType, GossipType.beacon_attestation>;
@@ -80,6 +82,7 @@ export type GossipTopicTypeMap = {
   [GossipType.payload_attestation_message]: {type: GossipType.payload_attestation_message};
   [GossipType.execution_payload_bid]: {type: GossipType.execution_payload_bid};
   [GossipType.proposer_preferences]: {type: GossipType.proposer_preferences};
+  [GossipType.randao_commitment_registration]: {type: GossipType.randao_commitment_registration};
 };
 
 export type GossipTopicMap = {
@@ -113,6 +116,7 @@ export type GossipTypeMap = {
   [GossipType.payload_attestation_message]: gloas.PayloadAttestationMessage;
   [GossipType.execution_payload_bid]: gloas.SignedExecutionPayloadBid;
   [GossipType.proposer_preferences]: gloas.SignedProposerPreferences;
+  [GossipType.randao_commitment_registration]: heze.SignedRandaoCommitmentRegistration;
 };
 
 export type GossipFnByType = {
@@ -146,6 +150,9 @@ export type GossipFnByType = {
   [GossipType.execution_payload_bid]: (executionPayloadBid: gloas.SignedExecutionPayloadBid) => Promise<void> | void;
   [GossipType.proposer_preferences]: (
     signedProposerPreferences: gloas.SignedProposerPreferences
+  ) => Promise<void> | void;
+  [GossipType.randao_commitment_registration]: (
+    registration: heze.SignedRandaoCommitmentRegistration
   ) => Promise<void> | void;
 };
 
