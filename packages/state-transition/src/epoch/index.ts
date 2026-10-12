@@ -13,6 +13,7 @@ import {
   CachedBeaconStateElectra,
   CachedBeaconStateFulu,
   CachedBeaconStateGloas,
+  CachedBeaconStateHeze,
   CachedBeaconStatePhase0,
   EpochTransitionCache,
 } from "../types.js";
@@ -27,6 +28,7 @@ import {processParticipationFlagUpdates} from "./processParticipationFlagUpdates
 import {processParticipationRecordUpdates} from "./processParticipationRecordUpdates.js";
 import {processPendingConsolidations} from "./processPendingConsolidations.js";
 import {processPendingDeposits} from "./processPendingDeposits.js";
+import {processPendingRandaoCommitments} from "./processPendingRandaoCommitments.js";
 import {processProposerLookahead} from "./processProposerLookahead.js";
 import {processPtcWindow} from "./processPtcWindow.js";
 import {processRandaoMixesReset} from "./processRandaoMixesReset.js";
@@ -55,6 +57,7 @@ export {
   processHistoricalSummariesUpdate,
   processPendingDeposits,
   processPendingConsolidations,
+  processPendingRandaoCommitments,
   processProposerLookahead,
   processPtcWindow,
   processBuilderPendingPayments,
@@ -85,6 +88,7 @@ export enum EpochTransitionStep {
   processProposerLookahead = "processProposerLookahead",
   processPtcWindow = "processPtcWindow",
   processBuilderPendingPayments = "processBuilderPendingPayments",
+  processPendingRandaoCommitments = "processPendingRandaoCommitments",
 }
 
 export function processEpoch(
@@ -123,6 +127,14 @@ export function processEpoch(
     metrics?.validatorsInExitQueue.set(cache.indicesToEject.length);
     const timer = metrics?.epochTransitionStepTime.startTimer({step: EpochTransitionStep.processRegistryUpdates});
     processRegistryUpdates(fork, state, cache);
+    timer?.();
+  }
+
+  if (fork >= ForkSeq.heze) {
+    const timer = metrics?.epochTransitionStepTime.startTimer({
+      step: EpochTransitionStep.processPendingRandaoCommitments,
+    });
+    processPendingRandaoCommitments(state as CachedBeaconStateHeze);
     timer?.();
   }
 
