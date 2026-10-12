@@ -6,28 +6,31 @@ import {ForkName} from "@lodestar/params";
 import {ssz} from "@lodestar/types";
 import {createCachedBeaconState} from "../../../src/index.js";
 import {upgradeStateToHeze} from "../../../src/slot/upgradeStateToHeze.js";
-import {CachedBeaconStateGloas} from "../../../src/types.js";
 import {interopSecretKeys} from "../../../src/util/index.js";
 
 describe("upgradeStateToHeze", () => {
-  it("initializes one zero randao commitment per validator", () => {
-    const config = getConfig(ForkName.gloas);
+  it("sets a zero randao commitment per validator and an empty pending list", () => {
     const view = ssz.gloas.BeaconState.defaultViewDU();
-    for (const sk of interopSecretKeys(2)) {
-      const validator = ssz.phase0.Validator.defaultValue();
-      validator.pubkey = sk.toPublicKey().toBytes();
-      view.validators.push(ssz.phase0.Validator.toViewDU(validator));
+    const secretKeys = interopSecretKeys(3);
+    for (const sk of secretKeys) {
+      view.validators.push(
+        ssz.phase0.Validator.toViewDU({...ssz.phase0.Validator.defaultValue(), pubkey: sk.toPublicKey().toBytes()})
+      );
     }
     view.commit();
-    const state = createCachedBeaconState(
+    const stateGloas = createCachedBeaconState(
       view,
-      {config: createBeaconConfig(config, view.genesisValidatorsRoot), pubkeyCache},
+      {config: createBeaconConfig(getConfig(ForkName.gloas), view.genesisValidatorsRoot), pubkeyCache},
       {skipSyncCommitteeCache: true}
-    ) as CachedBeaconStateGloas;
+    );
 
-    const stateHeze = upgradeStateToHeze(state);
+    const stateHeze = upgradeStateToHeze(stateGloas);
 
-    expect(stateHeze.randaoCommitments.getAllReadonly()).toEqual([new Uint8Array(32), new Uint8Array(32)]);
+    expect(stateHeze.validators.length).toBe(secretKeys.length);
+    expect(stateHeze.randaoCommitments.length).toBe(secretKeys.length);
+    for (let i = 0; i < secretKeys.length; i++) {
+      expect(stateHeze.randaoCommitments.get(i), `commitment ${i}`).toEqual(new Uint8Array(32));
+    }
     expect(stateHeze.pendingRandaoCommitments.length).toBe(0);
   });
 });
