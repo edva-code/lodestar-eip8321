@@ -1,5 +1,6 @@
 import {ssz} from "@lodestar/types";
 import {getCachedBeaconState} from "../cache/stateCache.js";
+import {ZERO_HASH} from "../constants/index.js";
 import {CachedBeaconStateGloas, CachedBeaconStateHeze} from "../types.js";
 
 /**
@@ -81,6 +82,10 @@ export function upgradeStateToHeze(stateGloas: CachedBeaconStateGloas): CachedBe
 
   stateHezeView.payloadExpectedWithdrawals = stateHezeCloned.payloadExpectedWithdrawals;
   stateHezeView.ptcWindow = stateHezeCloned.ptcWindow;
+  // [New in Heze:EIP8321] pending_randao_commitments defaults to empty
+  stateHezeView.randaoCommitments = ssz.heze.BeaconState.fields.randaoCommitments.toViewDU(
+    Array.from({length: stateHezeCloned.validators.length}, () => ZERO_HASH)
+  );
 
   const stateHeze = getCachedBeaconState(stateHezeView, stateGloas);
   stateHeze.commit();
