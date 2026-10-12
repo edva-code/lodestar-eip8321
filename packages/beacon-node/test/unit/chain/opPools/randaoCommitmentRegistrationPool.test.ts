@@ -1,9 +1,37 @@
 import {beforeEach, describe, expect, it} from "vitest";
 import {MAX_RANDAO_COMMITMENT_REGISTRATIONS} from "@lodestar/params";
 import {heze} from "@lodestar/types";
-import {RandaoCommitmentRegistrationPool} from "../../../../src/chain/opPools/randaoCommitmentRegistrationPool.js";
+import {
+  RandaoCommitmentRegistrationPool,
+  isRandaoCommitmentRegistrationIncludable,
+} from "../../../../src/chain/opPools/randaoCommitmentRegistrationPool.js";
 
 describe("chain / opPools / RandaoCommitmentRegistrationPool", () => {
+  describe("isRandaoCommitmentRegistrationIncludable", () => {
+    const zero = Buffer.alloc(32, 0);
+    const makeState = (opts: {validatorCount?: number; active?: number[]; pending?: number[]} = {}) => ({
+      validatorCount: opts.validatorCount ?? 10,
+      getRandaoCommitment: (index: number) => (opts.active?.includes(index) ? Buffer.alloc(32, 0x01) : zero),
+      hasPendingRandaoCommitment: (index: number) => opts.pending?.includes(index) ?? false,
+    });
+
+    it("accepts a validator with no commitment", () => {
+      expect(isRandaoCommitmentRegistrationIncludable(makeState(), makeRegistration(1))).toBe(true);
+    });
+
+    it("rejects an unknown validator index", () => {
+      expect(isRandaoCommitmentRegistrationIncludable(makeState({validatorCount: 5}), makeRegistration(5))).toBe(false);
+    });
+
+    it("rejects a validator with an active commitment", () => {
+      expect(isRandaoCommitmentRegistrationIncludable(makeState({active: [1]}), makeRegistration(1))).toBe(false);
+    });
+
+    it("rejects a validator with a pending commitment", () => {
+      expect(isRandaoCommitmentRegistrationIncludable(makeState({pending: [1]}), makeRegistration(1))).toBe(false);
+    });
+  });
+
   const makeRegistration = (validatorIndex: number, fill = 0xab): heze.SignedRandaoCommitmentRegistration => ({
     message: {validatorIndex, commitment: Buffer.alloc(32, fill)},
     signature: Buffer.alloc(96, 0),

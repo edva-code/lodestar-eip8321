@@ -17,6 +17,7 @@ import {
   ForkPreGloas,
   ForkSeq,
   INCLUSION_LIST_COMMITTEE_SIZE,
+  ZERO_HASH,
   isForkPostAltair,
   isForkPostBellatrix,
   isForkPostGloas,
@@ -31,6 +32,7 @@ import {
   isStatePostBellatrix,
   isStatePostCapella,
   isStatePostGloas,
+  isStatePostHeze,
 } from "@lodestar/state-transition";
 import {
   BLSPubkey,
@@ -79,7 +81,7 @@ import {fromGraffitiBytes} from "../../util/graffiti.js";
 import {kzg} from "../../util/kzg.js";
 import type {BeaconChain} from "../chain.js";
 import {CommonBlockBody} from "../interface.js";
-import {ProposerPreferencesPool} from "../opPools/index.js";
+import {ProposerPreferencesPool, isRandaoCommitmentRegistrationIncludable} from "../opPools/index.js";
 import {validateBlobsAndKzgCommitments, validateCellsAndKzgCommitments} from "./validateBlobsAndKzgCommitments.js";
 
 // Time to provide the EL to generate a payload from new payload id
@@ -182,6 +184,23 @@ export type ProduceResult =
  * `getStateAfterParentPayload` is a thunk so the post-apply state is only materialized when
  * actually needed (i.e. when extending the parent payload and there are exits to filter).
  */
+
+function setHezeRandaoFields(
+  chain: BeaconChain,
+  body: gloas.BeaconBlockBody,
+  state: IBeaconStateView,
+  fork: ForkName
+): void {
+  if (ForkSeq[fork] < ForkSeq.heze) return;
+  const hezeBody = body as heze.BeaconBlockBody;
+  hezeBody.hashChainReveal = ZERO_HASH;
+  hezeBody.randaoCommitmentRegistrations = isStatePostHeze(state)
+    ? chain.randaoCommitmentRegistrationPool.getForBlock((registration) =>
+        isRandaoCommitmentRegistrationIncludable(state, registration)
+      )
+    : [];
+}
+
 function maybeFilterInvalidatedVoluntaryExits(
   commonBlockBody: CommonBlockBody,
   isExtendingPayload: boolean,
@@ -265,6 +284,7 @@ export async function produceBlockBody<T extends BlockType>(
     gloasBody.voluntaryExits = maybeFilterInvalidatedVoluntaryExits(commonBlockBody, isExtendingPayload, () =>
       currentState.withParentPayloadApplied(parentExecutionRequests)
     );
+    setHezeRandaoFields(this, gloasBody, currentState, fork);
     blockBody = gloasBody as AssembledBodyType<T>;
 
     this.logger.verbose("Produced block with builder bid", {
@@ -407,6 +427,7 @@ export async function produceBlockBody<T extends BlockType>(
       isBuildingOnFull,
       () => stateAfterParentPayload
     );
+    setHezeRandaoFields(this, gloasBody, currentState, fork);
     blockBody = gloasBody as AssembledBodyType<T>;
 
     // Store execution payload data required to construct execution payload envelope later

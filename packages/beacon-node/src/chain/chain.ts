@@ -33,6 +33,7 @@ import {
   isStatePostAltair,
   isStatePostElectra,
   isStatePostGloas,
+  isStatePostHeze,
 } from "@lodestar/state-transition";
 import {
   BeaconBlock,
@@ -106,6 +107,7 @@ import {
   RandaoCommitmentRegistrationPool,
   SyncCommitteeMessagePool,
   SyncContributionAndProofPool,
+  isRandaoCommitmentRegistrationIncludable,
 } from "./opPools/index.js";
 import {IChainOptions} from "./options.js";
 import {PrepareNextSlotScheduler} from "./prepareNextSlot.js";
@@ -1832,6 +1834,12 @@ export class BeaconChain implements IBeaconChain {
 
     if (headState) {
       this.opPool.pruneAll(blockResult.block, headState);
+      if (isStatePostHeze(headState)) {
+        const hezeState = headState;
+        this.randaoCommitmentRegistrationPool.prune((registration) =>
+          isRandaoCommitmentRegistrationIncludable(hezeState, registration)
+        );
+      }
     }
 
     if (headState === null) {

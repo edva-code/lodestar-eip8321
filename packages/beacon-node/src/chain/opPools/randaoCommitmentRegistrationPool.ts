@@ -1,7 +1,26 @@
-import {MAX_RANDAO_COMMITMENT_REGISTRATIONS} from "@lodestar/params";
-import {ValidatorIndex, heze} from "@lodestar/types";
+import {MAX_RANDAO_COMMITMENT_REGISTRATIONS, ZERO_HASH} from "@lodestar/params";
+import {Bytes32, ValidatorIndex, heze} from "@lodestar/types";
+import {byteArrayEquals} from "@lodestar/utils";
 
 type SignedRegistration = heze.SignedRandaoCommitmentRegistration;
+
+export type RandaoCommitmentStateView = {
+  validatorCount: number;
+  getRandaoCommitment(validatorIndex: ValidatorIndex): Bytes32;
+  hasPendingRandaoCommitment(validatorIndex: ValidatorIndex): boolean;
+};
+
+export function isRandaoCommitmentRegistrationIncludable(
+  state: RandaoCommitmentStateView,
+  {message}: SignedRegistration
+): boolean {
+  const {validatorIndex} = message;
+  return (
+    validatorIndex < state.validatorCount &&
+    byteArrayEquals(state.getRandaoCommitment(validatorIndex), ZERO_HASH) &&
+    !state.hasPendingRandaoCommitment(validatorIndex)
+  );
+}
 
 export class RandaoCommitmentRegistrationPool {
   /* validator index -> registration. Map keeps insertion order, so oldest are included first */
