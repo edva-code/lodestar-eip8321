@@ -1,8 +1,10 @@
 import {BeaconConfig} from "@lodestar/config";
 import {ForkSeq} from "@lodestar/params";
-import {IndexedAttestation, SignedBeaconBlock, altair, capella, gloas} from "@lodestar/types";
+import {IndexedAttestation, SignedBeaconBlock, altair, capella, gloas, heze} from "@lodestar/types";
+import {byteArrayEquals} from "@lodestar/utils";
 import {getSyncCommitteeSignatureSet} from "../block/processSyncCommittee.js";
 import {SyncCommitteeCache} from "../cache/syncCommitteeCache.js";
+import {ZERO_HASH} from "../constants/constants.js";
 import {IBeaconStateView, IBeaconStateViewGloas} from "../stateView/interface.js";
 import {ISignatureSet, createAggregateSignatureSetFromComponents} from "../util/index.js";
 import {getAttesterSlashingsSignatureSets} from "./attesterSlashings.js";
@@ -44,8 +46,12 @@ export function getBlockSignatureSets(
   // fork based validations
   const fork = config.getForkSeq(signedBlock.message.slot);
 
+  // A non-zero hash chain reveal means processRandao takes the hash chain path, which has no BLS reveal to verify
+  const hasHashChainReveal =
+    fork >= ForkSeq.heze && !byteArrayEquals((signedBlock as heze.SignedBeaconBlock).message.body.hashChainReveal, ZERO_HASH);
+
   const signatureSets = [
-    getRandaoRevealSignatureSet(config, signedBlock.message),
+    ...(hasHashChainReveal ? [] : [getRandaoRevealSignatureSet(config, signedBlock.message)]),
     ...getProposerSlashingsSignatureSets(config, signedBlock),
     ...getAttesterSlashingsSignatureSets(config, signedBlock),
     ...getAttestationsSignatureSets(config, signedBlock, indexedAttestations),
