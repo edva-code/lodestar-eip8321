@@ -5,5 +5,6 @@ export {ExecutionPayloadBidPool, type PooledExecutionPayloadBid} from "./executi
 export {OpPool} from "./opPool.js";
 export {PayloadAttestationPool} from "./payloadAttestationPool.js";
 export {ProposerPreferencesPool} from "./proposerPreferencesPool.js";
+export {RandaoCommitmentRegistrationPool} from "./randaoCommitmentRegistrationPool.js";
 export {SyncCommitteeMessagePool} from "./syncCommitteeMessagePool.js";
 export {SyncContributionAndProofPool} from "./syncContributionAndProofPool.js";

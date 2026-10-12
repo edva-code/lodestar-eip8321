@@ -52,6 +52,7 @@ import {
   OpPool,
   PayloadAttestationPool,
   ProposerPreferencesPool,
+  RandaoCommitmentRegistrationPool,
   SyncCommitteeMessagePool,
   SyncContributionAndProofPool,
 } from "./opPools/index.js";
@@ -133,6 +134,7 @@ export interface IBeaconChain {
   readonly proposerPreferencesPool: ProposerPreferencesPool;
   readonly opPool: OpPool;
   readonly deferredVoluntaryExitPool: DeferredVoluntaryExitPool;
+  readonly randaoCommitmentRegistrationPool: RandaoCommitmentRegistrationPool;
 
   // Gossip seen cache
   readonly seenAttesters: SeenAttesters;

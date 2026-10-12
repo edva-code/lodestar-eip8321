@@ -103,6 +103,7 @@ import {
   OpPool,
   PayloadAttestationPool,
   ProposerPreferencesPool,
+  RandaoCommitmentRegistrationPool,
   SyncCommitteeMessagePool,
   SyncContributionAndProofPool,
 } from "./opPools/index.js";
@@ -200,6 +201,7 @@ export class BeaconChain implements IBeaconChain {
   readonly proposerPreferencesPool = new ProposerPreferencesPool();
   readonly opPool: OpPool;
   readonly deferredVoluntaryExitPool: DeferredVoluntaryExitPool;
+  readonly randaoCommitmentRegistrationPool: RandaoCommitmentRegistrationPool;
 
   // Gossip seen cache
   readonly seenAttesters = new SeenAttesters();
@@ -332,6 +334,7 @@ export class BeaconChain implements IBeaconChain {
     this.payloadAttestationPool = new PayloadAttestationPool(config, clock, metrics);
     this.opPool = new OpPool(config);
     this.deferredVoluntaryExitPool = new DeferredVoluntaryExitPool(logger);
+    this.randaoCommitmentRegistrationPool = new RandaoCommitmentRegistrationPool();
 
     this.seenAggregatedAttestations = new SeenAggregatedAttestations(metrics);
     this.seenContributionAndProof = new SeenContributionAndProof(metrics);

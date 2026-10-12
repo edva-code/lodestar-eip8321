@@ -297,6 +297,10 @@ export interface IBeaconStateViewGloas extends IBeaconStateViewFulu {
 /** Heze+ state fields — use isStatePostHeze() guard */
 export interface IBeaconStateViewHeze extends IBeaconStateViewGloas {
   forkName: ForkPostHeze;
+  /* EIP-8321: active hash-chain RANDAO commitment of a validator, all zeros if not registered */
+  getRandaoCommitment(validatorIndex: ValidatorIndex): Bytes32;
+  /* EIP-8321: true if the validator has a registration waiting in pendingRandaoCommitments */
+  hasPendingRandaoCommitment(validatorIndex: ValidatorIndex): boolean;
 }
 
 /**
@@ -335,6 +339,8 @@ export type IBeaconStateViewNative = Omit<
   IBeaconStateViewLatestFork,
   | "computeNewStateRoot"
   | "executionPayloadAvailability"
+  | "getRandaoCommitment"
+  | "hasPendingRandaoCommitment"
   | "loadOtherState"
   | "stateTransition"
   | "processSlots"
