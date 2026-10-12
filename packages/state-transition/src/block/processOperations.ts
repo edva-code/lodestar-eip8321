@@ -1,11 +1,12 @@
 import {ForkSeq} from "@lodestar/params";
-import {BeaconBlockBody, Slot, capella, electra, gloas} from "@lodestar/types";
+import {BeaconBlockBody, Slot, capella, electra, gloas, heze} from "@lodestar/types";
 import {BeaconStateTransitionMetrics} from "../metrics.js";
 import {
   CachedBeaconStateAllForks,
   CachedBeaconStateCapella,
   CachedBeaconStateElectra,
   CachedBeaconStateGloas,
+  CachedBeaconStateHeze,
 } from "../types.js";
 import {getEth1DepositCount} from "../util/deposit.js";
 import {processAttestations} from "./processAttestations.js";
@@ -16,6 +17,7 @@ import {processDeposit} from "./processDeposit.js";
 import {processDepositRequest} from "./processDepositRequest.js";
 import {processPayloadAttestation} from "./processPayloadAttestation.js";
 import {processProposerSlashing} from "./processProposerSlashing.js";
+import {processRandaoCommitmentRegistration} from "./processRandaoCommitmentRegistration.js";
 import {processVoluntaryExit} from "./processVoluntaryExit.js";
 import {processWithdrawalRequest} from "./processWithdrawalRequest.js";
 import {ProcessBlockOpts, ProcessOperationsStep} from "./types.js";
@@ -30,6 +32,7 @@ export {
   processBlsToExecutionChange,
   processDepositRequest,
   processConsolidationRequest,
+  processRandaoCommitmentRegistration,
 };
 
 export function processOperations(
@@ -136,6 +139,16 @@ export function processOperations(
     });
     for (const payloadAttestation of (body as gloas.BeaconBlockBody).payloadAttestations) {
       processPayloadAttestation(state as CachedBeaconStateGloas, payloadAttestation, opts.verifySignatures);
+    }
+    timer?.();
+  }
+
+  if (fork >= ForkSeq.heze) {
+    const timer = metrics?.processOperationsStepTime.startTimer({
+      step: ProcessOperationsStep.processRandaoCommitmentRegistration,
+    });
+    for (const registration of (body as heze.BeaconBlockBody).randaoCommitmentRegistrations) {
+      processRandaoCommitmentRegistration(state as CachedBeaconStateHeze, registration, opts.verifySignatures);
     }
     timer?.();
   }

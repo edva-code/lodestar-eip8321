@@ -38,4 +38,5 @@ export enum ProcessOperationsStep {
   processWithdrawalRequest = "processWithdrawalRequest",
   processConsolidationRequest = "processConsolidationRequest",
   processPayloadAttestation = "processPayloadAttestation",
+  processRandaoCommitmentRegistration = "processRandaoCommitmentRegistration",
 }

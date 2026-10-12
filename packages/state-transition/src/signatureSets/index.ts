@@ -14,6 +14,7 @@ import {getPayloadAttestationDataSigningRoot} from "./indexedPayloadAttestation.
 import {getBlockProposerSignatureSet} from "./proposer.js";
 import {getProposerSlashingsSignatureSets} from "./proposerSlashings.js";
 import {getRandaoRevealSignatureSet} from "./randao.js";
+import {getRandaoCommitmentRegistrationsSignatureSets} from "./randaoCommitmentRegistration.js";
 import {getVoluntaryExitsSignatureSets} from "./voluntaryExits.js";
 
 export * from "./attesterSlashings.js";
@@ -26,6 +27,7 @@ export * from "./proposer.js";
 export * from "./proposerPreferences.js";
 export * from "./proposerSlashings.js";
 export * from "./randao.js";
+export * from "./randaoCommitmentRegistration.js";
 export * from "./voluntaryExits.js";
 
 /**
@@ -48,7 +50,8 @@ export function getBlockSignatureSets(
 
   // A non-zero hash chain reveal means processRandao takes the hash chain path, which has no BLS reveal to verify
   const hasHashChainReveal =
-    fork >= ForkSeq.heze && !byteArrayEquals((signedBlock as heze.SignedBeaconBlock).message.body.hashChainReveal, ZERO_HASH);
+    fork >= ForkSeq.heze &&
+    !byteArrayEquals((signedBlock as heze.SignedBeaconBlock).message.body.hashChainReveal, ZERO_HASH);
 
   const signatureSets = [
     ...(hasHashChainReveal ? [] : [getRandaoRevealSignatureSet(config, signedBlock.message)]),
@@ -84,6 +87,10 @@ export function getBlockSignatureSets(
     if (blsToExecutionChangeSignatureSets.length > 0) {
       signatureSets.push(...blsToExecutionChangeSignatureSets);
     }
+  }
+
+  if (fork >= ForkSeq.heze) {
+    signatureSets.push(...getRandaoCommitmentRegistrationsSignatureSets(config, signedBlock as heze.SignedBeaconBlock));
   }
 
   if (fork >= ForkSeq.gloas) {
