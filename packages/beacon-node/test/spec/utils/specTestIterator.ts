@@ -81,6 +81,13 @@ export const defaultSkipOpts: SkipOpts = {
     /^heze\/fork_choice_compliance\/.*/,
     // TODO-HEZE: re-enable after on_inclusion_list (FOCIL) fork choice is implemented.
     /^heze\/fork_choice\/on_inclusion_list\/.*$/,
+    // TODO-HEZE: EIP-8321 adds fields to the Heze BeaconState and BeaconBlockBody. The pinned
+    // consensus-specs vectors predate them, so every vector that decodes either container fails on
+    // layout. Re-enable when the vectors include EIP-8321.
+    /^heze\/(epoch_processing|fast_confirmation|finality|fork|fork_choice|operations|random|rewards|sanity|transition)\/.*$/,
+    /^heze\/ssz_static\/(BeaconState|BeaconBlockBody|BeaconBlock|SignedBeaconBlock)\/.*$/,
+    /^heze\/light_client\/single_merkle_proof\/.*$/,
+    /^heze\/networking\/gossip_(attester_slashing|bls_to_execution_change|proposer_slashing|sync_committee_contribution_and_proof|sync_committee_message)\/.*$/,
   ],
   skippedTests: [],
   skippedRunners: [],
