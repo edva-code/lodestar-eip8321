@@ -109,6 +109,7 @@ export enum BlockProductionStep {
 
 export type BlockAttributes = {
   randaoReveal: BLSSignature;
+  hashChainReveal?: Bytes32;
   graffiti: Bytes32;
   slot: Slot;
   parentBlock: ProtoBlock;
@@ -185,15 +186,26 @@ export type ProduceResult =
  * actually needed (i.e. when extending the parent payload and there are exits to filter).
  */
 
+export function applyHashChainReveal(
+  body: Pick<heze.BeaconBlockBody, "hashChainReveal" | "randaoReveal">,
+  hashChainReveal: Bytes32 = ZERO_HASH
+): void {
+  body.hashChainReveal = hashChainReveal;
+  if (!byteArrayEquals(hashChainReveal, ZERO_HASH)) {
+    body.randaoReveal = G2_POINT_AT_INFINITY;
+  }
+}
+
 function setHezeRandaoFields(
   chain: BeaconChain,
   body: gloas.BeaconBlockBody,
   state: IBeaconStateView,
-  fork: ForkName
+  fork: ForkName,
+  hashChainReveal: Bytes32 | undefined
 ): void {
   if (ForkSeq[fork] < ForkSeq.heze) return;
   const hezeBody = body as heze.BeaconBlockBody;
-  hezeBody.hashChainReveal = ZERO_HASH;
+  applyHashChainReveal(hezeBody, hashChainReveal);
   hezeBody.randaoCommitmentRegistrations = isStatePostHeze(state)
     ? chain.randaoCommitmentRegistrationPool.getForBlock((registration) =>
         isRandaoCommitmentRegistrationIncludable(state, registration)
@@ -284,7 +296,7 @@ export async function produceBlockBody<T extends BlockType>(
     gloasBody.voluntaryExits = maybeFilterInvalidatedVoluntaryExits(commonBlockBody, isExtendingPayload, () =>
       currentState.withParentPayloadApplied(parentExecutionRequests)
     );
-    setHezeRandaoFields(this, gloasBody, currentState, fork);
+    setHezeRandaoFields(this, gloasBody, currentState, fork, blockAttr.hashChainReveal);
     blockBody = gloasBody as AssembledBodyType<T>;
 
     this.logger.verbose("Produced block with builder bid", {
@@ -427,7 +439,7 @@ export async function produceBlockBody<T extends BlockType>(
       isBuildingOnFull,
       () => stateAfterParentPayload
     );
-    setHezeRandaoFields(this, gloasBody, currentState, fork);
+    setHezeRandaoFields(this, gloasBody, currentState, fork, blockAttr.hashChainReveal);
     blockBody = gloasBody as AssembledBodyType<T>;
 
     // Store execution payload data required to construct execution payload envelope later
