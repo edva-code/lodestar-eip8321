@@ -1,11 +1,18 @@
 import {toBufferBE} from "@vekexasia/bigint-buffer2";
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
-import {SecretKey} from "@chainsafe/lodestar-z/blst";
+import {SecretKey, Signature, verify} from "@chainsafe/lodestar-z/blst";
 import {fromHexString, toHexString} from "@chainsafe/ssz";
 import {routes} from "@lodestar/api";
+import {createBeaconConfig} from "@lodestar/config";
 import {chainConfig} from "@lodestar/config/default";
 import {DOMAIN_BUILDER_REQUEST_AUTH, SLOTS_PER_EPOCH} from "@lodestar/params";
-import {ZERO_HASH, computeDomain, computeEpochAtSlot, computeSigningRoot} from "@lodestar/state-transition";
+import {
+  ZERO_HASH,
+  computeDomain,
+  computeEpochAtSlot,
+  computeSigningRoot,
+  getRandaoCommitmentRegistrationSignatureSet,
+} from "@lodestar/state-transition";
 import {bellatrix, ssz} from "@lodestar/types";
 import {ValidatorProposerConfig, ValidatorStore} from "../../src/services/validatorStore.js";
 import {InvalidBlockErrorCode} from "../../src/slashingProtection/index.js";
@@ -48,6 +55,17 @@ describe("ValidatorStore", () => {
 
   afterEach(() => {
     vi.resetAllMocks();
+  });
+
+  it("signRandaoCommitmentRegistration matches the beacon node signing root", async () => {
+    const commitment = new Uint8Array(32).fill(3);
+    const signed = await validatorStore.signRandaoCommitmentRegistration(pubkeys[0], 5, commitment, 0);
+
+    expect(signed.message).toEqual({validatorIndex: 5, commitment});
+    // Same genesis validators root as initValidatorStore
+    const config = createBeaconConfig(chainConfig, Buffer.alloc(32, 0xdd));
+    const {signingRoot} = getRandaoCommitmentRegistrationSignatureSet(config, signed);
+    expect(verify(signingRoot, secretKeys[0].toPublicKey(), Signature.fromBytes(signed.signature, true))).toBe(true);
   });
 
   describe.each([false, true])("signBlock blinded=%s", (blinded) => {

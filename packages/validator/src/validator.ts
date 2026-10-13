@@ -13,6 +13,7 @@ import {Logger, prettyGweiToEth, toPrintableUrl, toRootHex} from "@lodestar/util
 import {waitForGenesis} from "./genesis.js";
 import {Metrics} from "./metrics.js";
 import {MetaDataRepository} from "./repositories/metaDataRepository.js";
+import {RandaoHashChainRepository} from "./repositories/randaoHashChainRepository.js";
 import {AttestationService} from "./services/attestation.js";
 import {BlockProposingService} from "./services/block.js";
 import {BlockDutiesService} from "./services/blockDuties.js";
@@ -25,6 +26,7 @@ import {IndicesService} from "./services/indices.js";
 import {pollBuilderValidatorRegistration, pollPrepareBeaconProposer} from "./services/prepareBeaconProposer.js";
 import {ProposerPreferencesService} from "./services/proposerPreferences.js";
 import {PtcService} from "./services/ptc.js";
+import {RandaoCommitmentService} from "./services/randaoCommitment.js";
 import {SyncCommitteeService} from "./services/syncCommittee.js";
 import {SyncingStatusTracker} from "./services/syncingStatusTracker.js";
 import {
@@ -259,6 +261,15 @@ export class Validator {
       metrics
     );
 
+    const randaoCommitmentService = new RandaoCommitmentService(
+      config,
+      loggerVc,
+      api,
+      clock,
+      validatorStore,
+      new RandaoHashChainRepository(db)
+    );
+
     const blockProposingService = new BlockProposingService(
       config,
       loggerVc,
@@ -273,7 +284,8 @@ export class Validator {
         // Default to keeping the payload local to the beacon node if only a single node is
         // configured, with multiple nodes the stateless flow allows publishing via any of them
         payloadLocal: opts.payloadLocal ?? api.httpClient.urlsInits.length <= 1,
-      }
+      },
+      randaoCommitmentService
     );
 
     const attestationService = new AttestationService(

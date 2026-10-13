@@ -14,9 +14,11 @@ import {
   DOMAIN_PROPOSER_PREFERENCES,
   DOMAIN_PTC_ATTESTER,
   DOMAIN_RANDAO,
+  DOMAIN_RANDAO_COMMITMENT_REGISTRATION,
   DOMAIN_SELECTION_PROOF,
   DOMAIN_SYNC_COMMITTEE,
   DOMAIN_SYNC_COMMITTEE_SELECTION_PROOF,
+  ForkName,
   ForkSeq,
   MAX_BUILDER_AUTH_DATA_SIZE,
 } from "@lodestar/params";
@@ -35,6 +37,7 @@ import {
   BLSSignature,
   BeaconBlock,
   BlindedBeaconBlock,
+  Bytes32,
   Epoch,
   Root,
   SignedAggregateAndProof,
@@ -46,6 +49,7 @@ import {
   altair,
   bellatrix,
   gloas,
+  heze,
   phase0,
   ssz,
 } from "@lodestar/types";
@@ -265,6 +269,10 @@ export class ValidatorStore {
   /** Return all known indices from the validatorStore pubkeys */
   getAllLocalIndices(): ValidatorIndex[] {
     return this.indicesService.getAllLocalIndices();
+  }
+
+  getValidatorIndex(pubkeyHex: PubkeyHex): ValidatorIndex | undefined {
+    return this.indicesService.getValidatorIndex(pubkeyHex);
   }
 
   getPubkeyOfIndex(index: ValidatorIndex): PubkeyHex | undefined {
@@ -1011,6 +1019,28 @@ export class ValidatorStore {
 
     return {
       message: voluntaryExit,
+      signature: await this.getSignature(pubkey, signingRoot, signingSlot, signableMessage),
+    };
+  }
+
+  async signRandaoCommitmentRegistration(
+    pubkey: BLSPubkeyMaybeHex,
+    validatorIndex: ValidatorIndex,
+    commitment: Bytes32,
+    signingSlot: Slot
+  ): Promise<heze.SignedRandaoCommitmentRegistration> {
+    // Signed against the genesis fork version so the registration stays valid across forks
+    const domain = this.config.getDomainAtFork(ForkName.phase0, DOMAIN_RANDAO_COMMITMENT_REGISTRATION);
+    const registration: heze.RandaoCommitmentRegistration = {validatorIndex, commitment};
+    const signingRoot = computeSigningRoot(ssz.heze.RandaoCommitmentRegistration, registration, domain);
+
+    const signableMessage: SignableMessage = {
+      type: SignableMessageType.RANDAO_COMMITMENT_REGISTRATION,
+      data: registration,
+    };
+
+    return {
+      message: registration,
       signature: await this.getSignature(pubkey, signingRoot, signingSlot, signableMessage),
     };
   }

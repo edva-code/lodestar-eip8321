@@ -12,6 +12,7 @@ import {
   Slot,
   altair,
   gloas,
+  heze,
   phase0,
   ssz,
   sszTypesFor,
@@ -37,6 +38,7 @@ export enum SignableMessageType {
   PAYLOAD_ATTESTATION_MESSAGE = "PAYLOAD_ATTESTATION_MESSAGE",
   PROPOSER_PREFERENCES = "PROPOSER_PREFERENCES",
   BUILDER_REQUEST_AUTH = "BUILDER_REQUEST_AUTH",
+  RANDAO_COMMITMENT_REGISTRATION = "RANDAO_COMMITMENT_REGISTRATION",
 }
 
 const AggregationSlotType = new ContainerType({
@@ -89,7 +91,8 @@ export type SignableMessage =
   | {type: SignableMessageType.EXECUTION_PAYLOAD_ENVELOPE; data: gloas.ExecutionPayloadEnvelope}
   | {type: SignableMessageType.PAYLOAD_ATTESTATION_MESSAGE; data: gloas.PayloadAttestationData}
   | {type: SignableMessageType.PROPOSER_PREFERENCES; data: gloas.ProposerPreferences}
-  | {type: SignableMessageType.BUILDER_REQUEST_AUTH; data: gloas.BuilderRequestAuth};
+  | {type: SignableMessageType.BUILDER_REQUEST_AUTH; data: gloas.BuilderRequestAuth}
+  | {type: SignableMessageType.RANDAO_COMMITMENT_REGISTRATION; data: heze.RandaoCommitmentRegistration};
 
 const requiresForkInfo: Record<SignableMessageType, boolean> = {
   [SignableMessageType.AGGREGATION_SLOT]: true,
@@ -108,6 +111,8 @@ const requiresForkInfo: Record<SignableMessageType, boolean> = {
   [SignableMessageType.PAYLOAD_ATTESTATION_MESSAGE]: true,
   [SignableMessageType.PROPOSER_PREFERENCES]: true,
   [SignableMessageType.BUILDER_REQUEST_AUTH]: false,
+  // Signed with the genesis fork version domain, like validator registrations
+  [SignableMessageType.RANDAO_COMMITMENT_REGISTRATION]: false,
 };
 
 type Web3SignerSerializedRequest = {
@@ -319,6 +324,9 @@ function serializerSignableMessagePayload(config: BeaconConfig, payload: Signabl
         },
       };
     }
+
+    case SignableMessageType.RANDAO_COMMITMENT_REGISTRATION:
+      return {randao_commitment_registration: ssz.heze.RandaoCommitmentRegistration.toJson(payload.data)};
   }
 }
 

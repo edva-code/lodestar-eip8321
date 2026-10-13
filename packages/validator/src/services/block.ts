@@ -1,6 +1,6 @@
 import {ApiClient, routes} from "@lodestar/api";
 import {ChainForkConfig} from "@lodestar/config";
-import {BUILDER_INDEX_SELF_BUILD, ForkPostGloas, isForkPostGloas} from "@lodestar/params";
+import {BUILDER_INDEX_SELF_BUILD, ForkPostGloas, ForkSeq, isForkPostGloas} from "@lodestar/params";
 import {IClock} from "@lodestar/state-transition";
 import {
   BLSPubkey,
@@ -8,6 +8,7 @@ import {
   BeaconBlock,
   BlindedBeaconBlock,
   BlockContents,
+  Bytes32,
   ProducedBlockSource,
   SignedBlindedBeaconBlock,
   SignedBlockContents,
@@ -19,6 +20,7 @@ import {Metrics} from "../metrics.js";
 import {PubkeyHex} from "../types.js";
 import {LoggerVc} from "../util/index.js";
 import {BlockDutiesService, GENESIS_SLOT} from "./blockDuties.js";
+import {RandaoCommitmentService} from "./randaoCommitment.js";
 import {ValidatorStore} from "./validatorStore.js";
 
 // The following combination of blocks and blobs can be produced
@@ -56,7 +58,8 @@ export class BlockProposingService {
     private readonly validatorStore: ValidatorStore,
     dutiesService: BlockDutiesService,
     private readonly metrics: Metrics | null,
-    private readonly opts: BlockProposalOpts
+    private readonly opts: BlockProposalOpts,
+    private readonly randaoCommitmentService: RandaoCommitmentService | null = null
   ) {
     this.dutiesService = dutiesService;
     this.dutiesService.setNotifyBlockProductionFn(this.notifyBlockProductionFn);
@@ -188,6 +191,7 @@ export class BlockProposingService {
     const debugLogCtx = {slot, validator: pubkeyHex};
 
     const randaoReveal = await this.validatorStore.signRandao(pubkey, slot);
+    const hashChainReveal = await this.getHashChainReveal(pubkeyHex, slot);
     const graffiti = this.validatorStore.getGraffiti(pubkeyHex);
     const feeRecipient = this.validatorStore.getFeeRecipient(pubkeyHex);
     const strictFeeRecipientCheck = this.validatorStore.strictFeeRecipientCheck(pubkeyHex);
@@ -238,6 +242,7 @@ export class BlockProposingService {
       .produceBlockV4({
         slot,
         randaoReveal,
+        hashChainReveal,
         graffiti,
         feeRecipient,
         strictFeeRecipientCheck,
@@ -408,6 +413,19 @@ export class BlockProposingService {
       ).assertOk();
     }
   };
+
+  private async getHashChainReveal(pubkeyHex: PubkeyHex, slot: Slot): Promise<Bytes32 | undefined> {
+    if (this.randaoCommitmentService === null || this.config.getForkSeq(slot) < ForkSeq.heze) return undefined;
+    const validatorIndex = this.validatorStore.getValidatorIndex(pubkeyHex);
+    if (validatorIndex === undefined) return undefined;
+    try {
+      return await this.randaoCommitmentService.getHashChainReveal(pubkeyHex, validatorIndex);
+    } catch (e) {
+      // Still try to produce, the beacon node falls back to the BLS reveal if the proposer is not registered
+      this.logger.error("Failed to compute hash chain reveal", {slot, validatorIndex}, e as Error);
+      return undefined;
+    }
+  }
 
   private produceBlockWrapper = async (
     _config: ChainForkConfig,

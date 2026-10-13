@@ -13,6 +13,7 @@ export enum Bucket {
   // allForks_pendingBlock = 25, // Root -> SignedBeaconBlock // DEPRECATED on v0.30.0
 
   validator_metaData = 41,
+  validator_randaoHashChain = 42,
 }
 
 export function getBucketNameByValue<T extends Bucket>(enumValue: T): keyof typeof Bucket {
