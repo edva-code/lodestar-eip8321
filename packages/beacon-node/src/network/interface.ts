@@ -33,6 +33,7 @@ import {
   deneb,
   fulu,
   gloas,
+  heze,
   phase0,
 } from "@lodestar/types";
 import {BlockInputSource} from "../chain/blocks/blockInput/types.js";
@@ -108,6 +109,7 @@ export interface INetwork extends INetworkCorePublic {
   ): Promise<{sentPeers: number; alreadyPublished: boolean}>;
   publishVoluntaryExit(voluntaryExit: phase0.SignedVoluntaryExit): Promise<number>;
   publishBlsToExecutionChange(blsToExecutionChange: capella.SignedBLSToExecutionChange): Promise<number>;
+  publishRandaoCommitmentRegistration(registration: heze.SignedRandaoCommitmentRegistration): Promise<number>;
   publishProposerSlashing(proposerSlashing: phase0.ProposerSlashing): Promise<number>;
   publishAttesterSlashing(attesterSlashing: AttesterSlashing): Promise<number>;
   publishSyncCommitteeSignature(signature: altair.SyncCommitteeMessage, subnet: SubnetID): Promise<number>;

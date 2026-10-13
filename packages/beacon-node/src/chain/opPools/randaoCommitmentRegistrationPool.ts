@@ -38,6 +38,10 @@ export class RandaoCommitmentRegistrationPool {
     return this.registrations.has(validatorIndex);
   }
 
+  getAll(): SignedRegistration[] {
+    return Array.from(this.registrations.values());
+  }
+
   getForBlock(isIncludable: (registration: SignedRegistration) => boolean): SignedRegistration[] {
     const result: SignedRegistration[] = [];
     for (const registration of this.registrations.values()) {

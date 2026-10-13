@@ -10,6 +10,7 @@ import {
   isStatePostElectra,
   isStatePostFulu,
   isStatePostGloas,
+  isStatePostHeze,
 } from "@lodestar/state-transition";
 import {ValidatorIndex, getBuilderStatus, getValidatorStatus, ssz} from "@lodestar/types";
 import {ApiError} from "../../errors.js";
@@ -70,6 +71,24 @@ export function getBeaconStateApi({
 
       return {
         data: {randao},
+        meta: {executionOptimistic, finalized},
+      };
+    },
+
+    async getStateRandaoCommitment({stateId, validatorIndex}) {
+      const {state, executionOptimistic, finalized} = await getState(stateId);
+      if (!isStatePostHeze(state)) {
+        throw new ApiError(400, `Randao commitments are not supported before Heze fork=${state.forkName}`);
+      }
+      if (validatorIndex >= state.validatorCount) {
+        throw new ApiError(404, `Validator index ${validatorIndex} not found`);
+      }
+
+      return {
+        data: {
+          commitment: state.getRandaoCommitment(validatorIndex),
+          pending: state.hasPendingRandaoCommitment(validatorIndex),
+        },
         meta: {executionOptimistic, finalized},
       };
     },

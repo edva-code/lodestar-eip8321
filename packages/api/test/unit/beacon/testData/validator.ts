@@ -83,6 +83,7 @@ export const testData: GenericServerTestCases<Endpoints> = {
     args: {
       slot: 32000,
       randaoReveal,
+      hashChainReveal: new Uint8Array(32).fill(2),
       graffiti,
       skipRandaoVerification: true,
       feeRecipient,

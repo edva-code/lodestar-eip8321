@@ -26,6 +26,7 @@ import {
   deneb,
   fulu,
   gloas,
+  heze,
   isGloasDataColumnSidecar,
   phase0,
 } from "@lodestar/types";
@@ -438,6 +439,18 @@ export class Network implements INetwork {
       throw Error("No capella+ fork active yet to publish blsToExecutionChange");
     }
     return Promise.any(publishChanges);
+  }
+
+  async publishRandaoCommitmentRegistration(registration: heze.SignedRandaoCommitmentRegistration): Promise<number> {
+    const boundary = this.config.getForkBoundaryAtEpoch(this.clock.currentEpoch);
+    if (ForkSeq[boundary.fork] < ForkSeq.heze) {
+      throw Error("No heze+ fork active yet to publish randaoCommitmentRegistration");
+    }
+
+    return this.publishGossip<GossipType.randao_commitment_registration>(
+      {type: GossipType.randao_commitment_registration, boundary},
+      registration
+    );
   }
 
   async publishProposerSlashing(proposerSlashing: phase0.ProposerSlashing): Promise<number> {

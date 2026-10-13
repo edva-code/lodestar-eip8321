@@ -23,6 +23,7 @@ import {validateApiBlsToExecutionChange} from "../../../../chain/validation/blsT
 import {toElectraSingleAttestation, validateApiAttestation} from "../../../../chain/validation/index.js";
 import {validateApiPayloadAttestationMessage} from "../../../../chain/validation/payloadAttestationMessage.js";
 import {validateApiProposerSlashing} from "../../../../chain/validation/proposerSlashing.js";
+import {validateGossipRandaoCommitmentRegistration} from "../../../../chain/validation/randaoCommitmentRegistration.js";
 import {validateApiSyncCommittee} from "../../../../chain/validation/syncCommittee.js";
 import {validateApiVoluntaryExit} from "../../../../chain/validation/voluntaryExit.js";
 import {OpSource} from "../../../../chain/validatorMonitor.js";
@@ -82,6 +83,10 @@ export function getBeaconPoolApi({
 
     async getPoolBLSToExecutionChanges() {
       return {data: chain.opPool.getAllBlsToExecutionChanges().map(({data}) => data)};
+    },
+
+    async getPoolRandaoCommitmentRegistrations() {
+      return {data: chain.randaoCommitmentRegistrationPool.getAll()};
     },
 
     async submitPoolAttestationsV2({signedAttestations}) {
@@ -232,6 +237,33 @@ export function getBeaconPoolApi({
 
       if (failures.length > 0) {
         throw new IndexedError("Error processing BLS to execution changes", failures);
+      }
+    },
+
+    async submitPoolRandaoCommitmentRegistrations({registrations}) {
+      const failures: FailureList = [];
+
+      await Promise.all(
+        registrations.map(async (registration, i) => {
+          try {
+            // Already validated and gossiped, a validator client resubmitting after a restart is not an error
+            if (chain.randaoCommitmentRegistrationPool.has(registration.message.validatorIndex)) return;
+            await validateGossipRandaoCommitmentRegistration(chain, registration);
+            chain.randaoCommitmentRegistrationPool.add(registration);
+            await network.publishRandaoCommitmentRegistration(registration);
+          } catch (e) {
+            failures.push({index: i, message: (e as Error).message});
+            logger.verbose(
+              `Error on submitPoolRandaoCommitmentRegistrations [${i}]`,
+              {validatorIndex: registration.message.validatorIndex},
+              e as Error
+            );
+          }
+        })
+      );
+
+      if (failures.length > 0) {
+        throw new IndexedError("Error processing randao commitment registrations", failures);
       }
     },
 

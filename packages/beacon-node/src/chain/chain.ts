@@ -1192,6 +1192,7 @@ export class BeaconChain implements IBeaconChain {
     blockType: T,
     {
       randaoReveal,
+      hashChainReveal,
       graffiti,
       slot,
       feeRecipient,
@@ -1221,6 +1222,7 @@ export class BeaconChain implements IBeaconChain {
       state,
       {
         randaoReveal,
+        hashChainReveal,
         graffiti,
         slot,
         feeRecipient,

@@ -906,6 +906,7 @@ export function getValidatorApi(
     async produceBlockV4({
       slot,
       randaoReveal,
+      hashChainReveal,
       graffiti,
       feeRecipient,
       strictFeeRecipientCheck,
@@ -1079,6 +1080,7 @@ export function getValidatorApi(
         slot,
         parentBlock,
         randaoReveal,
+        hashChainReveal,
         graffiti: graffitiBytes,
         feeRecipient,
         strictFeeRecipientCheck,

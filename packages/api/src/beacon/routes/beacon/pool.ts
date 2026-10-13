@@ -9,6 +9,7 @@ import {
   Slot,
   capella,
   electra,
+  heze,
   phase0,
   ssz,
 } from "@lodestar/types";
@@ -37,6 +38,7 @@ const ProposerSlashingListType = ArrayOf(ssz.phase0.ProposerSlashing);
 const SignedVoluntaryExitListType = ArrayOf(ssz.phase0.SignedVoluntaryExit);
 const SignedBLSToExecutionChangeListType = ArrayOf(ssz.capella.SignedBLSToExecutionChange);
 const SyncCommitteeMessageListType = ArrayOf(ssz.altair.SyncCommitteeMessage);
+const SignedRandaoCommitmentRegistrationListType = ArrayOf(ssz.heze.SignedRandaoCommitmentRegistration);
 const PayloadAttestationListType = new ProgressiveListCompositeType(ssz.gloas.PayloadAttestation, {
   typeName: "PayloadAttestations",
 });
@@ -54,6 +56,7 @@ type ProposerSlashingList = ValueOf<typeof ProposerSlashingListType>;
 type SignedVoluntaryExitList = ValueOf<typeof SignedVoluntaryExitListType>;
 type SignedBLSToExecutionChangeList = ValueOf<typeof SignedBLSToExecutionChangeListType>;
 type SyncCommitteeMessageList = ValueOf<typeof SyncCommitteeMessageListType>;
+type SignedRandaoCommitmentRegistrationList = ValueOf<typeof SignedRandaoCommitmentRegistrationListType>;
 type PayloadAttestationList = ValueOf<typeof PayloadAttestationListType>;
 type PayloadAttestationMessageList = ValueOf<typeof PayloadAttestationMessageListType>;
 
@@ -135,6 +138,19 @@ export type Endpoints = {
   >;
 
   /**
+   * Get SignedRandaoCommitmentRegistration from operations pool
+   * Retrieves EIP-8321 randao commitment registrations known by the node but not necessarily incorporated into any block
+   */
+  getPoolRandaoCommitmentRegistrations: Endpoint<
+    // ⏎
+    "GET",
+    EmptyArgs,
+    EmptyRequest,
+    SignedRandaoCommitmentRegistrationList,
+    EmptyMeta
+  >;
+
+  /**
    * Submit Attestation objects to node
    * Submits Attestation objects to the node.  Each attestation in the request body is processed individually.
    *
@@ -193,6 +209,18 @@ export type Endpoints = {
   submitPoolBLSToExecutionChange: Endpoint<
     "POST",
     {blsToExecutionChanges: capella.SignedBLSToExecutionChange[]},
+    {body: unknown},
+    EmptyResponseData,
+    EmptyMeta
+  >;
+
+  /**
+   * Submit SignedRandaoCommitmentRegistration objects to node's pool
+   * Submits EIP-8321 randao commitment registrations to node's pool and if passes validation node MUST broadcast it to network.
+   */
+  submitPoolRandaoCommitmentRegistrations: Endpoint<
+    "POST",
+    {registrations: heze.SignedRandaoCommitmentRegistration[]},
     {body: unknown},
     EmptyResponseData,
     EmptyMeta
@@ -286,6 +314,15 @@ export function getDefinitions(config: ChainForkConfig): RouteDefinitions<Endpoi
       req: EmptyRequestCodec,
       resp: {
         data: SignedBLSToExecutionChangeListType,
+        meta: EmptyMetaCodec,
+      },
+    },
+    getPoolRandaoCommitmentRegistrations: {
+      url: "/eth/v1/beacon/pool/randao_commitment_registrations",
+      method: "GET",
+      req: EmptyRequestCodec,
+      resp: {
+        data: SignedRandaoCommitmentRegistrationListType,
         meta: EmptyMetaCodec,
       },
     },
@@ -419,6 +456,20 @@ export function getDefinitions(config: ChainForkConfig): RouteDefinitions<Endpoi
           body: SignedBLSToExecutionChangeListType.serialize(blsToExecutionChanges),
         }),
         parseReqSsz: ({body}) => ({blsToExecutionChanges: SignedBLSToExecutionChangeListType.deserialize(body)}),
+        schema: {
+          body: Schema.ObjectArray,
+        },
+      },
+      resp: EmptyResponseCodec,
+    },
+    submitPoolRandaoCommitmentRegistrations: {
+      url: "/eth/v1/beacon/pool/randao_commitment_registrations",
+      method: "POST",
+      req: {
+        writeReqJson: ({registrations}) => ({body: SignedRandaoCommitmentRegistrationListType.toJson(registrations)}),
+        parseReqJson: ({body}) => ({registrations: SignedRandaoCommitmentRegistrationListType.fromJson(body)}),
+        writeReqSsz: ({registrations}) => ({body: SignedRandaoCommitmentRegistrationListType.serialize(registrations)}),
+        parseReqSsz: ({body}) => ({registrations: SignedRandaoCommitmentRegistrationListType.deserialize(body)}),
         schema: {
           body: Schema.ObjectArray,
         },

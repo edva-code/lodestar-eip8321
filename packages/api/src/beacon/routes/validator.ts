@@ -20,6 +20,7 @@ import {
   BeaconBlock,
   BlindedBeaconBlock,
   BlockContents,
+  Bytes32,
   CommitteeIndex,
   Epoch,
   ProducedBlockSource,
@@ -512,6 +513,8 @@ export type Endpoints = {
       slot: Slot;
       /** The validator's randao reveal value */
       randaoReveal: BLSSignature;
+      /** EIP-8321 hash chain reveal, required once the proposer has an active randao commitment */
+      hashChainReveal?: Bytes32;
       /** Arbitrary data validator wants to include in block */
       graffiti?: string;
       skipRandaoVerification?: boolean;
@@ -523,6 +526,7 @@ export type Endpoints = {
       params: {slot: number};
       query: {
         randao_reveal: string;
+        hash_chain_reveal?: string;
         graffiti?: string;
         skip_randao_verification?: string;
         fee_recipient?: string;
@@ -1000,6 +1004,7 @@ export function getDefinitions(config: ChainForkConfig): RouteDefinitions<Endpoi
         writeReqJson: ({
           slot,
           randaoReveal,
+          hashChainReveal,
           graffiti,
           skipRandaoVerification,
           feeRecipient,
@@ -1010,6 +1015,7 @@ export function getDefinitions(config: ChainForkConfig): RouteDefinitions<Endpoi
           params: {slot},
           query: {
             randao_reveal: toHex(randaoReveal),
+            hash_chain_reveal: hashChainReveal && toHex(hashChainReveal),
             graffiti: toGraffitiHex(graffiti),
             skip_randao_verification: writeSkipRandaoVerification(skipRandaoVerification),
             fee_recipient: feeRecipient,
@@ -1024,6 +1030,7 @@ export function getDefinitions(config: ChainForkConfig): RouteDefinitions<Endpoi
           return {
             slot: params.slot,
             randaoReveal: fromHex(query.randao_reveal),
+            hashChainReveal: query.hash_chain_reveal !== undefined ? fromHex(query.hash_chain_reveal) : undefined,
             graffiti: fromGraffitiHex(query.graffiti),
             skipRandaoVerification: parseSkipRandaoVerification(query.skip_randao_verification),
             feeRecipient: query.fee_recipient,
@@ -1035,6 +1042,7 @@ export function getDefinitions(config: ChainForkConfig): RouteDefinitions<Endpoi
         writeReqSsz: ({
           slot,
           randaoReveal,
+          hashChainReveal,
           graffiti,
           skipRandaoVerification,
           feeRecipient,
@@ -1045,6 +1053,7 @@ export function getDefinitions(config: ChainForkConfig): RouteDefinitions<Endpoi
           params: {slot},
           query: {
             randao_reveal: toHex(randaoReveal),
+            hash_chain_reveal: hashChainReveal && toHex(hashChainReveal),
             graffiti: toGraffitiHex(graffiti),
             skip_randao_verification: writeSkipRandaoVerification(skipRandaoVerification),
             fee_recipient: feeRecipient,
@@ -1059,6 +1068,7 @@ export function getDefinitions(config: ChainForkConfig): RouteDefinitions<Endpoi
           return {
             slot: params.slot,
             randaoReveal: fromHex(query.randao_reveal),
+            hashChainReveal: query.hash_chain_reveal !== undefined ? fromHex(query.hash_chain_reveal) : undefined,
             graffiti: fromGraffitiHex(query.graffiti),
             skipRandaoVerification: parseSkipRandaoVerification(query.skip_randao_verification),
             feeRecipient: query.fee_recipient,
@@ -1071,6 +1081,7 @@ export function getDefinitions(config: ChainForkConfig): RouteDefinitions<Endpoi
           params: {slot: Schema.UintRequired},
           query: {
             randao_reveal: Schema.StringRequired,
+            hash_chain_reveal: Schema.String,
             graffiti: Schema.String,
             skip_randao_verification: Schema.String,
             fee_recipient: Schema.String,

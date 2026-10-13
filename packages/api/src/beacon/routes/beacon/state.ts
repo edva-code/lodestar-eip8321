@@ -9,6 +9,7 @@ import {
   RootHex,
   Slot,
   StringType,
+  ValidatorIndex,
   ValidatorStatus,
   electra,
   fulu,
@@ -46,6 +47,13 @@ export type {BuilderStatus, ValidatorStatus};
 export const RandaoResponseType = new ContainerType({
   randao: ssz.Root,
 });
+export const RandaoCommitmentResponseType = new ContainerType(
+  {
+    commitment: ssz.Bytes32,
+    pending: ssz.Boolean,
+  },
+  {jsonCase: "eth2"}
+);
 export const FinalityCheckpointsType = new ContainerType(
   {
     previousJustified: ssz.phase0.Checkpoint,
@@ -98,6 +106,7 @@ export const EpochCommitteeResponseListType = ArrayOf(EpochCommitteeResponseType
 export const ValidatorBalanceListType = ArrayOf(ValidatorBalanceType);
 
 export type RandaoResponse = ValueOf<typeof RandaoResponseType>;
+export type RandaoCommitmentResponse = ValueOf<typeof RandaoCommitmentResponseType>;
 export type FinalityCheckpoints = ValueOf<typeof FinalityCheckpointsType>;
 export type ValidatorResponse = ValueOf<typeof ValidatorResponseType>;
 export type BuilderResponse = ValueOf<typeof BuilderResponseType>;
@@ -150,6 +159,19 @@ export type Endpoints = {
     },
     {params: {state_id: string}; query: {epoch?: number}},
     RandaoResponse,
+    ExecutionOptimisticAndFinalizedMeta
+  >;
+
+  /**
+   * Get EIP-8321 hash-chain RANDAO commitment of a validator
+   * Returns the active commitment, all zeros if the validator has not registered one yet,
+   * and whether a registration is waiting in the pending queue.
+   */
+  getStateRandaoCommitment: Endpoint<
+    "GET",
+    StateArgs & {validatorIndex: ValidatorIndex},
+    {params: {state_id: string; validator_index: number}},
+    RandaoCommitmentResponse,
     ExecutionOptimisticAndFinalizedMeta
   >;
 
@@ -484,6 +506,23 @@ export function getDefinitions(_config: ChainForkConfig): RouteDefinitions<Endpo
       },
       resp: {
         data: RandaoResponseType,
+        meta: ExecutionOptimisticAndFinalizedCodec,
+      },
+    },
+    getStateRandaoCommitment: {
+      url: "/eth/v1/beacon/states/{state_id}/randao_commitments/{validator_index}",
+      method: "GET",
+      req: {
+        writeReq: ({stateId, validatorIndex}) => ({
+          params: {state_id: stateId.toString(), validator_index: validatorIndex},
+        }),
+        parseReq: ({params}) => ({stateId: params.state_id, validatorIndex: params.validator_index}),
+        schema: {
+          params: {state_id: Schema.StringRequired, validator_index: Schema.UintRequired},
+        },
+      },
+      resp: {
+        data: RandaoCommitmentResponseType,
         meta: ExecutionOptimisticAndFinalizedCodec,
       },
     },

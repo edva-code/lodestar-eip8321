@@ -142,6 +142,10 @@ export const testData: GenericServerTestCases<Endpoints> = {
     args: undefined,
     res: {data: [ssz.capella.SignedBLSToExecutionChange.defaultValue()]},
   },
+  getPoolRandaoCommitmentRegistrations: {
+    args: undefined,
+    res: {data: [ssz.heze.SignedRandaoCommitmentRegistration.defaultValue()]},
+  },
   submitPoolAttestationsV2: {
     args: {signedAttestations: [ssz.electra.SingleAttestation.defaultValue()]},
     res: undefined,
@@ -160,6 +164,10 @@ export const testData: GenericServerTestCases<Endpoints> = {
   },
   submitPoolBLSToExecutionChange: {
     args: {blsToExecutionChanges: [ssz.capella.SignedBLSToExecutionChange.defaultValue()]},
+    res: undefined,
+  },
+  submitPoolRandaoCommitmentRegistrations: {
+    args: {registrations: [ssz.heze.SignedRandaoCommitmentRegistration.defaultValue()]},
     res: undefined,
   },
   submitPoolSyncCommitteeSignatures: {
@@ -184,6 +192,10 @@ export const testData: GenericServerTestCases<Endpoints> = {
   getStateRandao: {
     args: {stateId: "head", epoch: 1},
     res: {data: {randao}, meta: {executionOptimistic: true, finalized: false}},
+  },
+  getStateRandaoCommitment: {
+    args: {stateId: "head", validatorIndex: 1},
+    res: {data: {commitment: randao, pending: false}, meta: {executionOptimistic: true, finalized: false}},
   },
   getStateFinalityCheckpoints: {
     args: {stateId: "head"},

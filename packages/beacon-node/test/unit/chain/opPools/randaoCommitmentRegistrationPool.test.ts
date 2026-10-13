@@ -53,6 +53,12 @@ describe("chain / opPools / RandaoCommitmentRegistrationPool", () => {
     expect(pool.getForBlock(() => true)).toEqual([reg]);
   });
 
+  it("getAll returns every registration in insertion order", () => {
+    pool.add(makeRegistration(3));
+    pool.add(makeRegistration(1));
+    expect(indices(pool.getAll())).toEqual([3, 1]);
+  });
+
   it("keeps the first registration for a validator and rejects the second", () => {
     const first = makeRegistration(1, 0x01);
     const second = makeRegistration(1, 0x02);
