@@ -15,5 +15,10 @@ export function loadSpecTestConfig(testCaseDir: string): Partial<ChainConfig> {
     schema: jsyaml.FAILSAFE_SCHEMA,
   }) as Record<string, unknown>;
 
+  // Lodestar runs eip8321 vectors as heze, so heze must sign with the EIP-8321 fork version
+  if (configJson.EIP8321_FORK_VERSION !== undefined) {
+    configJson.HEZE_FORK_VERSION = configJson.EIP8321_FORK_VERSION;
+  }
+
   return chainConfigFromJson(configJson);
 }

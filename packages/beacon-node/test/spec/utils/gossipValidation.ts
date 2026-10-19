@@ -34,6 +34,7 @@ import {validateGossipAttesterSlashing} from "../../../src/chain/validation/atte
 import {validateGossipBlock} from "../../../src/chain/validation/block.js";
 import {validateGossipBlsToExecutionChange} from "../../../src/chain/validation/blsToExecutionChange.js";
 import {validateGossipProposerSlashing} from "../../../src/chain/validation/proposerSlashing.js";
+import {validateGossipRandaoCommitmentRegistration} from "../../../src/chain/validation/randaoCommitmentRegistration.js";
 import {validateGossipSyncCommittee} from "../../../src/chain/validation/syncCommittee.js";
 import {validateSyncCommitteeGossipContributionAndProof} from "../../../src/chain/validation/syncCommitteeContributionAndProof.js";
 import {validateGossipVoluntaryExit} from "../../../src/chain/validation/voluntaryExit.js";
@@ -158,6 +159,7 @@ const gossipTopicByHandler = {
   gossip_sync_committee_message: GossipType.sync_committee,
   gossip_sync_committee_contribution_and_proof: GossipType.sync_committee_contribution_and_proof,
   gossip_bls_to_execution_change: GossipType.bls_to_execution_change,
+  gossip_randao_commitment_registration: GossipType.randao_commitment_registration,
 } as const satisfies Record<string, GossipType>;
 
 export function isGossipValidationHandler(topicHandler: string): topicHandler is keyof typeof gossipTopicByHandler {
@@ -331,7 +333,12 @@ export async function runGossipValidationTest(
   }
 
   const anchorState = loadState(testCaseDir, fork);
-  const testCaseConfig = {...getConfig(fork), ...loadSpecTestConfig(testCaseDir)};
+  const testCaseConfig = {
+    ...getConfig(fork),
+    // Pyspec signs eip8321 vectors with their own fork version, which only the anchor state carries
+    ...(fork === ForkName.heze ? {HEZE_FORK_VERSION: anchorState.fork.currentVersion} : {}),
+    ...loadSpecTestConfig(testCaseDir),
+  };
   const beaconConfig = createBeaconConfig(testCaseConfig, anchorState.genesisValidatorsRoot);
 
   const genesisTimeSec = Number(anchorState.genesisTime);
@@ -692,6 +699,16 @@ async function validateMessageForTopic(
       await validateGossipBlsToExecutionChange(chain, blsToExecutionChange);
       // Mirror gossip handler: insert into opPool so duplicate detection works
       chain.opPool.insertBlsToExecutionChange(blsToExecutionChange);
+      break;
+    }
+
+    case GossipType.randao_commitment_registration: {
+      const signedRegistration = rejectOnInvalidSerializedBytes(() =>
+        ssz.heze.SignedRandaoCommitmentRegistration.deserialize(bytes)
+      );
+      await validateGossipRandaoCommitmentRegistration(chain, signedRegistration);
+      // Mirror gossip handler: insert into pool so duplicate detection works
+      chain.randaoCommitmentRegistrationPool.add(signedRegistration);
       break;
     }
 

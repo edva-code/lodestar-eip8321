@@ -2,9 +2,16 @@ import fs from "node:fs";
 import path from "node:path";
 import {beforeEach, describe, it} from "vitest";
 import {pubkeyCache} from "@chainsafe/lodestar-z/pubkeys";
-import {ForkName} from "@lodestar/params";
+import {defaultChainConfig} from "@lodestar/config";
+import {ACTIVE_PRESET, ForkName, PresetName} from "@lodestar/params";
 import {describeDirectorySpecTest} from "@lodestar/spec-test-util";
+import {fromHex} from "@lodestar/utils";
 import {RunnerType, TestRunner} from "./types.js";
+
+// Pyspec builds EIP-8321 as a feature fork on top of heze with its own fork version, which signs every
+// generated vector. Lodestar ships EIP-8321 inside heze, so those vectors run as heze with that version.
+const EIP8321_FORK_DIR = "eip8321";
+const EIP8321_FORK_VERSION = ACTIVE_PRESET === PresetName.minimal ? "0xe8321001" : "0xe8321000";
 
 const ARTIFACT_FILENAMES = new Set([
   // MacOS artifacts
@@ -72,7 +79,7 @@ export const defaultSkipOpts: SkipOpts = {
     /^.+\/networking\/gossip_beacon_block\/.*$/,
     /^.+\/networking\/gossip_voluntary_exit\/.*$/,
     // Deneb+ epoch-boundary attestations and Electra+ single attestations need harness updates.
-    /^(deneb|electra|fulu|gloas|heze)\/networking\/gossip_beacon_(attestation|aggregate_and_proof)\/.*$/,
+    /^(deneb|electra|fulu|gloas|heze|eip8321)\/networking\/gossip_beacon_(attestation|aggregate_and_proof)\/.*$/,
     // Ignore the partial data column container additions for now. Unskip them when
     // cell level DAS is ready
     /^fulu\/ssz_static\/PartialDataColumn(GroupID|Header|PartsMetadata|Sidecar)\/.*$/,
@@ -88,8 +95,19 @@ export const defaultSkipOpts: SkipOpts = {
     /^heze\/ssz_static\/(BeaconState|BeaconBlockBody|BeaconBlock|SignedBeaconBlock)\/.*$/,
     /^heze\/light_client\/single_merkle_proof\/.*$/,
     /^heze\/networking\/gossip_(attester_slashing|bls_to_execution_change|proposer_slashing|sync_committee_contribution_and_proof|sync_committee_message)\/.*$/,
+    // Pyspec upgrades a heze pre-state without the EIP-8321 fields, a layout Lodestar's heze does not have.
+    /^eip8321\/fork\/.*$/,
   ],
-  skippedTests: [],
+  skippedTests: [
+    // The pyspec test primes its `seen` set in code, nothing in the vector carries that state.
+    /\/?gossip_randao_commitment_registration__ignore_already_seen$/,
+    // The vector rewrites state.fork.current_version to a pre-EIP-8321 value, but Lodestar derives the
+    // fork from the slot and the fork schedule, so the head state is still heze.
+    /\/?gossip_randao_commitment_registration__ignore_pre_eip8321_head_state$/,
+    // The eip8321 vectors are generated from v1.7.0-beta.3, which reorders gloas builder payment settlement
+    // (consensus-specs#5695). Lodestar still implements v1.7.0-beta.2 there.
+    /\/process_parent_execution_payload__older_than_previous_epoch_builder_exit$/,
+  ],
   skippedRunners: [],
   // Gossip handlers not implemented in the spec runner.
   skippedHandlers: [
@@ -134,14 +152,21 @@ export function specTestIterator(
   testRunners: Record<string, TestRunner>,
   opts: SkipOpts = defaultSkipOpts
 ): void {
-  for (const forkStr of readdirSyncSpec(configDirpath)) {
+  const forkStrs = readdirSyncSpec(configDirpath);
+  for (const forkStr of forkStrs) {
     if (
       opts?.skippedForks?.includes(forkStr) ||
-      (process.env.SPEC_FILTER_FORK && forkStr !== process.env.SPEC_FILTER_FORK)
+      (process.env.SPEC_FILTER_FORK && forkStr !== process.env.SPEC_FILTER_FORK) ||
+      // Both run as heze with different fork versions, and the eip8321 vectors supersede the older heze ones
+      (forkStr === ForkName.heze && forkStrs.includes(EIP8321_FORK_DIR))
     ) {
       continue;
     }
-    const fork = forkStr as ForkName;
+    let fork = forkStr as ForkName;
+    if (forkStr === EIP8321_FORK_DIR) {
+      fork = ForkName.heze;
+      defaultChainConfig.HEZE_FORK_VERSION = fromHex(EIP8321_FORK_VERSION);
+    }
 
     const forkDirpath = path.join(configDirpath, forkStr);
     for (const testRunnerName of readdirSyncSpec(forkDirpath)) {
@@ -170,7 +195,7 @@ export function specTestIterator(
 
         const testHandlerDirpath = path.join(testRunnerDirpath, testHandler);
         for (const testSuite of readdirSyncSpec(testHandlerDirpath)) {
-          const testId = `${fork}/${testRunnerName}/${testHandler}/${testSuite}`;
+          const testId = `${forkStr}/${testRunnerName}/${testHandler}/${testSuite}`;
 
           if (opts?.skippedTestSuites?.some((skippedMatch) => testId.match(skippedMatch))) {
             displaySkipTest(testId);

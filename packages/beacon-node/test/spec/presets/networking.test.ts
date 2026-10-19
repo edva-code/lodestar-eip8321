@@ -7,7 +7,7 @@ import {bigIntToBytes, loadYaml} from "@lodestar/utils";
 import {computeColumnsForCustodyGroup, getCustodyGroups} from "../../../src/util/dataColumns.js";
 import {ethereumConsensusSpecsTests} from "../specTestVersioning.js";
 import {isGossipValidationHandler, runGossipValidationTest} from "../utils/gossipValidation.js";
-import {readdirSyncSpec, specTestIterator} from "../utils/specTestIterator.js";
+import {defaultSkipOpts, readdirSyncSpec, specTestIterator} from "../utils/specTestIterator.js";
 import {RunnerType, TestRunnerCustom} from "../utils/types.js";
 
 type ComputeColumnForCustodyGroupInput = {
@@ -63,9 +63,14 @@ const networking: TestRunnerCustom = (fork, testHandler, testSuite, testSuiteDir
   if (isGossipValidationHandler(testHandler)) {
     for (const testCaseName of readdirSyncSpec(testSuiteDirpath)) {
       const testCaseDir = path.join(testSuiteDirpath, testCaseName);
-      it(testCaseName, async () => {
-        await runGossipValidationTest(fork, testHandler, testCaseDir);
-      }, 30_000);
+      const skip = defaultSkipOpts.skippedTests?.some((skippedMatch) => testCaseName.match(skippedMatch)) ?? false;
+      it.skipIf(skip)(
+        testCaseName,
+        async () => {
+          await runGossipValidationTest(fork, testHandler, testCaseDir);
+        },
+        30_000
+      );
     }
   } else if (networkingFns[testHandler] !== undefined) {
     runNetworkingFnTests(testHandler, testSuite, testSuiteDirpath);

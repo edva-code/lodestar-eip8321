@@ -7,6 +7,7 @@ import {getConfig} from "@lodestar/config/test-utils";
 import {CheckpointWithHex, ExecutionStatus, ForkChoice} from "@lodestar/fork-choice";
 import {testLogger} from "@lodestar/logger/test-utils";
 import {
+  ForkName,
   ForkPostDeneb,
   ForkPostFulu,
   ForkPostGloas,
@@ -96,7 +97,11 @@ export const forkChoiceTestRunner =
       testFunction: async (testcase, _directoryName, testCaseName) => {
         const {steps, anchorState, anchorBlock} = testcase;
         const currentSlot = anchorState.slot;
-        const config = getConfig(fork);
+        const config = {
+          ...getConfig(fork),
+          // Pyspec signs eip8321 vectors with their own fork version, which only the anchor state carries
+          ...(fork === ForkName.heze ? {HEZE_FORK_VERSION: anchorState.fork.currentVersion} : {}),
+        };
         // const state = createCachedBeaconStateTest(anchorState, config);
 
         /** This is to track test's tickTime to be used in proposer boost */

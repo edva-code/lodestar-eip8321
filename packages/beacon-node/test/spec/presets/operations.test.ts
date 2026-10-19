@@ -10,11 +10,23 @@ import {
   CachedBeaconStateCapella,
   CachedBeaconStateElectra,
   CachedBeaconStateGloas,
+  CachedBeaconStateHeze,
   ExecutionPayloadStatus,
   getBlockRootAtSlot,
 } from "@lodestar/state-transition";
 import * as blockFns from "@lodestar/state-transition/block";
-import {AttesterSlashing, altair, bellatrix, capella, electra, gloas, phase0, ssz, sszTypesFor} from "@lodestar/types";
+import {
+  AttesterSlashing,
+  altair,
+  bellatrix,
+  capella,
+  electra,
+  gloas,
+  heze,
+  phase0,
+  ssz,
+  sszTypesFor,
+} from "@lodestar/types";
 import {createCachedBeaconStateTest} from "../../utils/cachedBeaconState.js";
 import {ethereumConsensusSpecsTests} from "../specTestVersioning.js";
 import {expectEqualBeaconState, inputTypeSszTreeViewDU} from "../utils/expectEqualBeaconState.js";
@@ -137,6 +149,21 @@ const operationFns: Record<string, BlockProcessFn<CachedBeaconStateAllForks>> = 
   builder_exit_request: (state, testCase: {builder_exit_request: gloas.BuilderExitRequest}) => {
     blockFns.processBuilderExitRequest(state as CachedBeaconStateGloas, testCase.builder_exit_request);
   },
+
+  randao: (state, testCase: BaseSpecTest & {block: heze.BeaconBlock}) => {
+    blockFns.processRandao(state, testCase.block, shouldVerify(testCase));
+  },
+
+  randao_commitment_registration: (
+    state,
+    testCase: BaseSpecTest & {randao_commitment_registration: heze.SignedRandaoCommitmentRegistration}
+  ) => {
+    blockFns.processRandaoCommitmentRegistration(
+      state as CachedBeaconStateHeze,
+      testCase.randao_commitment_registration,
+      shouldVerify(testCase)
+    );
+  },
 };
 
 export type BlockProcessFn<T extends CachedBeaconStateAllForks> = (state: T, testCase: any) => T | void;
@@ -205,6 +232,7 @@ const operations: TestRunnerFn<OperationsTestCase, BeaconStateAllForks> = (fork,
           : ssz.gloas.SignedExecutionPayloadBid,
         builder_deposit_request: ssz.gloas.BuilderDepositRequest,
         builder_exit_request: ssz.gloas.BuilderExitRequest,
+        randao_commitment_registration: ssz.heze.SignedRandaoCommitmentRegistration,
       },
       shouldError: (testCase) => testCase.post === undefined,
       // Only an ssz list limit violation is an expected input error, anything else is a decode bug
