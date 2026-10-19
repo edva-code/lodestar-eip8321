@@ -142,6 +142,7 @@ interface MetaYaml {
   current_time_ms?: bigint;
   messages: {
     offset_ms?: bigint;
+    current_time_ms?: bigint;
     subnet_id?: bigint;
     message: string;
     expected: "valid" | "ignore" | "reject";
@@ -524,7 +525,11 @@ export async function runGossipValidationTest(
 
     const baseCurrentTimeMs = Number(meta.current_time_ms ?? 0);
     for (const message of meta.messages) {
-      const messageTimeMs = baseCurrentTimeMs + Number(message.offset_ms ?? 0);
+      // Since v1.7.0-beta.3 each message carries its own receive time as Unix time
+      const messageTimeMs =
+        message.current_time_ms !== undefined
+          ? Number(message.current_time_ms) - genesisTimeSec * 1000
+          : baseCurrentTimeMs + Number(message.offset_ms ?? 0);
       clock.setCurrentTimeMs(messageTimeMs);
 
       let result: "valid" | "ignore" | "reject";
