@@ -107,6 +107,8 @@ export const defaultSkipOpts: SkipOpts = {
     // The eip8321 vectors are generated from v1.7.0-beta.3, which reorders gloas builder payment settlement
     // (consensus-specs#5695). Lodestar still implements v1.7.0-beta.2 there.
     /\/process_parent_execution_payload__older_than_previous_epoch_builder_exit$/,
+    // Same, for the gloas empty slot support discount fix in fast confirmation (consensus-specs#5672).
+    /\/is_one_confirmed_(delayed_with_mixed_payload_votes_in_empty_slot|passes_with_empty_slot_and_attester_in_two_consecutive_slots_1)$/,
   ],
   skippedRunners: [],
   // Gossip handlers not implemented in the spec runner.
