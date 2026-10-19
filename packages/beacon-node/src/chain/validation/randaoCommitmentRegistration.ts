@@ -32,7 +32,7 @@ export async function validateGossipRandaoCommitmentRegistration(
     });
   }
 
-  // [REJECT] Conditions of process_randao_commitment_registration, signature verified in batch below
+  // Conditions of process_randao_commitment_registration, already registered or pending are IGNORE per p2p spec
   if (validatorIndex >= state.validatorCount) {
     throw new RandaoCommitmentRegistrationError(GossipAction.REJECT, {
       code: RandaoCommitmentRegistrationErrorCode.UNKNOWN_VALIDATOR,
@@ -44,12 +44,12 @@ export async function validateGossipRandaoCommitmentRegistration(
     });
   }
   if (!byteArrayEquals(state.getRandaoCommitment(validatorIndex), ZERO_HASH)) {
-    throw new RandaoCommitmentRegistrationError(GossipAction.REJECT, {
+    throw new RandaoCommitmentRegistrationError(GossipAction.IGNORE, {
       code: RandaoCommitmentRegistrationErrorCode.ALREADY_REGISTERED,
     });
   }
   if (state.hasPendingRandaoCommitment(validatorIndex)) {
-    throw new RandaoCommitmentRegistrationError(GossipAction.REJECT, {
+    throw new RandaoCommitmentRegistrationError(GossipAction.IGNORE, {
       code: RandaoCommitmentRegistrationErrorCode.ALREADY_PENDING,
     });
   }
