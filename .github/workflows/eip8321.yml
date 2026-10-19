@@ -1,0 +1,137 @@
+name: EIP-8321
+
+# Generates the EIP-8321 reference tests from consensus-specs (they are not published as a release
+# artifact) and runs them against Lodestar on GitHub-hosted runners.
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [eip-8321-hash-chain-randao]
+  workflow_dispatch:
+
+env:
+  SPEC_REF: v1.7.0-beta.3
+  # Bump to regenerate the cached vectors
+  VECTORS_CACHE_VERSION: 1
+  SHARDS: 6
+
+jobs:
+  vectors:
+    name: Generate vectors (${{ matrix.preset }} ${{ matrix.shard }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [minimal, mainnet]
+        shard: [0, 1, 2, 3, 4, 5]
+    steps:
+      - name: Restore vectors
+        id: cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: reftests
+          key: eip8321-vectors-v${{ env.VECTORS_CACHE_VERSION }}-${{ env.SPEC_REF }}-${{ matrix.preset }}-${{ matrix.shard }}-of-${{ env.SHARDS }}
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.cache.outputs.cache-hit != 'true'
+        with:
+          repository: ethereum/consensus-specs
+          ref: ${{ env.SPEC_REF }}
+          path: consensus-specs
+
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        if: steps.cache.outputs.cache-hit != 'true'
+
+      - name: Build pyspec
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: consensus-specs
+        run: make build
+
+      # Equivalent to `make test reftests=true fork=eip8321`, split by test file across shards.
+      # unittests produce no vectors. The mainnet lifecycle test fails in pyspec itself (it registers more
+      # commitments than MAX_RANDAO_COMMITMENT_REGISTRATIONS) and writes no vector.
+      - name: Generate vectors
+        if: steps.cache.outputs.cache-hit != 'true'
+        working-directory: consensus-specs
+        run: |
+          T=tests/core/pyspec/eth_consensus_specs/test
+          files=$(find $T -name 'test_*.py' -not -path '*/unittests/*' | sort | awk -v n=$SHARDS -v i=${{ matrix.shard }} 'NR % n == i')
+          uv run pytest -n logical --dist=worksteal -q \
+            --fork=eip8321 --preset=${{ matrix.preset }} \
+            --reftests --reftests-output=$GITHUB_WORKSPACE/reftests \
+            --deselect "$T/eip8321/sanity/test_blocks.py::test_randao_commitment_registration_lifecycle[mainnet]" \
+            $files
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: vectors-${{ matrix.preset }}-${{ matrix.shard }}
+          path: reftests
+          retention-days: 7
+
+  spec-tests:
+    name: Spec tests (${{ matrix.preset }})
+    needs: vectors
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [minimal, mainnet]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: "./.github/actions/setup-and-build"
+        with:
+          node: 24
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: vectors-${{ matrix.preset }}-*
+          path: packages/beacon-node/spec-tests/tests
+          merge-multiple: true
+
+      - name: Vector sizes
+        run: du -sh packages/beacon-node/spec-tests/tests/${{ matrix.preset }}/eip8321/*
+
+      - name: Spec tests
+        working-directory: packages/beacon-node
+        env:
+          SPEC_FILTER_FORK: eip8321
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: pnpm vitest run --project spec-${{ matrix.preset }} test/spec/presets/
+
+  checks:
+    name: Lint, types and unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: "./.github/actions/setup-and-build"
+        with:
+          node: 24
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type checks
+        run: pnpm check-types
+
+      - name: EIP-8321 unit tests
+        run: |
+          pnpm vitest run --project unit \
+            packages/beacon-node/test/unit/api/impl/beacon/pool/randaoCommitmentRegistrations.test.ts \
+            packages/beacon-node/test/unit/chain/opPools/randaoCommitmentRegistrationPool.test.ts \
+            packages/beacon-node/test/unit/chain/produceBlock/applyHashChainReveal.test.ts \
+            packages/beacon-node/test/unit/network/gossip/topic.test.ts \
+            packages/state-transition/test/unit/block/addValidatorToRegistry.test.ts \
+            packages/state-transition/test/unit/block/processRandao.test.ts \
+            packages/state-transition/test/unit/block/processRandaoCommitmentRegistration.test.ts \
+            packages/state-transition/test/unit/epoch/processPendingRandaoCommitments.test.ts \
+            packages/state-transition/test/unit/slot/upgradeStateToHeze.test.ts \
+            packages/state-transition/test/unit/util/blake3.test.ts \
+            packages/validator/test/unit/util/hashChain.test.ts \
+            packages/validator/test/unit/validatorStore.test.ts
