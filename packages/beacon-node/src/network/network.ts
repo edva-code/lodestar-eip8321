@@ -544,6 +544,16 @@ export class Network implements INetwork {
     );
   }
 
+  async publishInclusionList(signedInclusionList: heze.SignedInclusionList): Promise<number> {
+    const epoch = computeEpochAtSlot(signedInclusionList.message.slot);
+    const boundary = this.config.getForkBoundaryAtEpoch(epoch);
+
+    return this.publishGossip<GossipType.inclusion_list>(
+      {type: GossipType.inclusion_list, boundary},
+      signedInclusionList
+    );
+  }
+
   async publishProposerPreferences(signedProposerPreferences: gloas.SignedProposerPreferences): Promise<number> {
     const epoch = computeEpochAtSlot(signedProposerPreferences.message.proposalSlot);
     const boundary = this.config.getForkBoundaryAtEpoch(epoch);

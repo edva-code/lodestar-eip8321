@@ -22,6 +22,7 @@ import {
   CachedBeaconStateAltair,
   CachedBeaconStateElectra,
   CachedBeaconStateHeze,
+  CachedBeaconStatePreHeze,
 } from "../types.js";
 import {
   computeDomain,
@@ -38,7 +39,7 @@ import {
  *
  * PERF: Work depends on number of Deposit per block. On regular networks the average is 0 / block.
  */
-export function processDeposit(fork: ForkSeq, state: CachedBeaconStateAllForks, deposit: phase0.Deposit): void {
+export function processDeposit(fork: ForkSeq, state: CachedBeaconStatePreHeze, deposit: phase0.Deposit): void {
   // verify the merkle branch
   if (
     !verifyMerkleBranch(

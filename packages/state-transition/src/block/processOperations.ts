@@ -1,4 +1,4 @@
-import {ForkSeq} from "@lodestar/params";
+import {ForkPreHeze, ForkSeq} from "@lodestar/params";
 import {BeaconBlockBody, Slot, capella, electra, gloas, heze} from "@lodestar/types";
 import {BeaconStateTransitionMetrics} from "../metrics.js";
 import {
@@ -7,6 +7,7 @@ import {
   CachedBeaconStateElectra,
   CachedBeaconStateGloas,
   CachedBeaconStateHeze,
+  CachedBeaconStatePreHeze,
 } from "../types.js";
 import {getEth1DepositCount} from "../util/deposit.js";
 import {processAttestations} from "./processAttestations.js";
@@ -43,13 +44,15 @@ export function processOperations(
   opts: ProcessBlockOpts = {verifySignatures: true},
   metrics?: BeaconStateTransitionMetrics | null
 ): void {
-  // verify that outstanding deposits are processed up to the maximum number of deposits.
-  // From Fulu the eth1 bridge deposit mechanism was removed, so blocks must not contain any deposits.
-  const maxDeposits = fork >= ForkSeq.fulu ? 0 : getEth1DepositCount(state);
-  if (body.deposits.length !== maxDeposits) {
-    throw new Error(
-      `Block contains incorrect number of deposits: depositCount=${body.deposits.length} expected=${maxDeposits}`
-    );
+  if (fork < ForkSeq.heze) {
+    // From Fulu the eth1 bridge deposit mechanism was removed, so blocks must not contain any deposits.
+    const deposits = (body as BeaconBlockBody<ForkPreHeze>).deposits;
+    const maxDeposits = fork >= ForkSeq.fulu ? 0 : getEth1DepositCount(state as CachedBeaconStatePreHeze);
+    if (deposits.length !== maxDeposits) {
+      throw new Error(
+        `Block contains incorrect number of deposits: depositCount=${deposits.length} expected=${maxDeposits}`
+      );
+    }
   }
 
   {
@@ -74,10 +77,10 @@ export function processOperations(
     timer?.();
   }
 
-  {
+  if (fork < ForkSeq.heze) {
     const timer = metrics?.processOperationsStepTime.startTimer({step: ProcessOperationsStep.processDeposit});
-    for (const deposit of body.deposits) {
-      processDeposit(fork, state, deposit);
+    for (const deposit of (body as BeaconBlockBody<ForkPreHeze>).deposits) {
+      processDeposit(fork, state as CachedBeaconStatePreHeze, deposit);
     }
     timer?.();
   }

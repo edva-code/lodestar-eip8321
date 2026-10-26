@@ -21,7 +21,8 @@ import {
   IBeaconStateView,
   RootCache,
   computeEpochAtSlot,
-  computeTimeAtSlot,
+  computeTimeAtSlotMs,
+  getBeaconCommittees,
   isStatePostAltair,
   isStatePostBellatrix,
 } from "@lodestar/state-transition";
@@ -44,7 +45,7 @@ import {isQueueErrorAborted} from "../../util/queue/index.js";
 import type {BeaconChain} from "../chain.js";
 import {ChainEvent, ReorgEventData} from "../emitter.js";
 import {ForkchoiceCaller} from "../forkChoice/index.js";
-import {REPROCESS_MIN_TIME_TO_NEXT_SLOT_SEC} from "../reprocess.js";
+import {REPROCESS_MIN_TIME_TO_NEXT_SLOT_BPS} from "../reprocess.js";
 import {toCheckpointHex} from "../stateCache/persistentCheckpointsCache.js";
 import {isBlockInputBlobs, isBlockInputColumns} from "./blockInput/blockInput.js";
 import {AttestationImportOpt, FullyVerifiedBlock, ImportBlockOpts} from "./types.js";
@@ -104,8 +105,9 @@ export async function importBlock(
   const currentEpoch = computeEpochAtSlot(currentSlot);
   const blockEpoch = computeEpochAtSlot(blockSlot);
   const prevFinalizedEpoch = this.forkChoice.getFinalizedCheckpoint().epoch;
-  const receiveDelaySec =
-    fullyVerifiedBlock.seenTimestampSec - computeTimeAtSlot(this.config, blockSlot, postState.genesisTime);
+  const receiveDelayMs =
+    Math.round(fullyVerifiedBlock.seenTimestampSec * 1000) -
+    computeTimeAtSlotMs(this.config, blockSlot, postState.genesisTime * 1000);
   const recvToValLatency = Date.now() / 1000 - (opts.seenTimestampSec ?? Date.now() / 1000);
   const fork = this.config.getForkSeq(blockSlot);
 
@@ -129,11 +131,17 @@ export async function importBlock(
 
   // Should compute checkpoint balances before forkchoice.onBlock
   this.checkpointBalancesCache.processState(blockRootHex, postState);
-  if (fork >= ForkSeq.gloas) {
+  if (isGloasBeaconBlock(block.message)) {
+    // A gloas block has no payload of its own, it inherits the status of the payload it builds on,
+    // i.e. the parent variant matching the bid's parent block hash. The parent's default (PENDING)
+    // variant does not reflect a SYNCING parent payload, and onBlock would then mark that payload VALID.
     const parentRootHex = toRootHex(block.message.parentRoot);
-    const parentBlock = this.forkChoice.getBlockHexDefaultStatus(parentRootHex);
+    const parentBlockHashHex = toRootHex(block.message.body.signedExecutionPayloadBid.message.parentBlockHash);
+    const parentBlock = this.forkChoice.getBlockHexAndBlockHash(parentRootHex, parentBlockHashHex);
     if (parentBlock === null) {
-      throw Error(`Parent block not found in forkChoice, parentRoot=${parentRootHex}`);
+      throw Error(
+        `Parent block not found in forkChoice, parentRoot=${parentRootHex} parentBlockHash=${parentBlockHashHex}`
+      );
     }
     if (parentBlock.executionStatus === ExecutionStatus.Invalid) {
       throw Error(`Parent block has invalid execution status, parentRoot=${parentRootHex}`);
@@ -141,12 +149,12 @@ export async function importBlock(
     executionStatus = parentBlock.executionStatus;
   }
 
-  const importDelaySec = this.clock.secFromSlot(blockSlot);
+  const importDelayMs = this.clock.msFromSlot(blockSlot);
   const blockSummary = this.forkChoice.onBlock(
     block.message,
     postState,
-    receiveDelaySec,
-    importDelaySec,
+    receiveDelayMs,
+    importDelayMs,
     currentSlot,
     executionStatus,
     dataAvailabilityStatus
@@ -328,7 +336,8 @@ export async function importBlock(
       this.metrics.headSlot.set(newHead.slot);
       // Only track "recent" blocks. Otherwise sync can distort this metrics heavily.
       // We want to track recent blocks coming from gossip, unknown block sync, and API.
-      if (delaySec < (SLOTS_PER_EPOCH * this.config.SLOT_DURATION_MS) / 1000) {
+      const headFork = this.config.getForkName(newHead.slot);
+      if (delaySec < (SLOTS_PER_EPOCH * this.config.getSlotDurationMs(headFork)) / 1000) {
         this.metrics.importBlock.elapsedTimeTillBecomeHead.observe(delaySec);
         const cutOffSec = this.config.getAttestationDueMs(this.config.getForkName(blockSlot)) / 1000;
         if (delaySec > cutOffSec) {
@@ -400,9 +409,8 @@ export async function importBlock(
     const proposalSlot = blockSlot + 1;
     try {
       const proposerIndex = postState.getBeaconProposer(proposalSlot);
-      const feeRecipient = this.beaconProposerCache.get(proposerIndex);
 
-      if (feeRecipient) {
+      if (this.beaconProposerCache.has(proposerIndex)) {
         // We would set this to true if
         //  1) This is a gossip block
         //  2) We are proposer of next slot
@@ -410,7 +418,7 @@ export async function importBlock(
         //  4) Block meets the criteria of being re-orged out (this is also checked inside the function)
         const result = this.forkChoice.shouldOverrideForkChoiceUpdate(
           blockSummary,
-          this.clock.secFromSlot(currentSlot),
+          this.clock.msFromSlot(currentSlot),
           currentSlot
         );
         shouldOverrideFcu = result.shouldOverrideFcu;
@@ -451,7 +459,8 @@ export async function importBlock(
      * - `headBlockHash !== null` -> Pre BELLATRIX_EPOCH
      * - `headBlockHash !== ZERO_HASH` -> Pre TTD
      */
-    const headBlockHash = this.forkChoice.getHead().executionPayloadBlockHash ?? ZERO_HASH_HEX;
+    const fcuHead = this.forkChoice.getHead();
+    const headBlockHash = fcuHead.executionPayloadBlockHash ?? ZERO_HASH_HEX;
     /**
      * After BELLATRIX_EPOCH and TTD it's okay to send a zero hash block hash for the finalized block. This will happen if
      * the current finalized block does not contain any execution payload at all (pre MERGE_EPOCH) or if it contains a
@@ -461,12 +470,7 @@ export async function importBlock(
     const finalizedBlockHash = getFinalizedExecutionBlockHash(this.forkChoice);
     if (headBlockHash !== ZERO_HASH_HEX) {
       this.executionEngine
-        .notifyForkchoiceUpdate(
-          this.config.getForkName(this.forkChoice.getHead().slot),
-          headBlockHash,
-          safeBlockHash,
-          finalizedBlockHash
-        )
+        .notifyForkchoiceUpdate(this.config.getForkName(fcuHead.slot), headBlockHash, safeBlockHash, finalizedBlockHash)
         .catch((e) => {
           if (!isErrorAborted(e) && !isQueueErrorAborted(e)) {
             this.logger.error("Error pushing notifyForkchoiceUpdate()", {headBlockHash, finalizedBlockHash}, e);
@@ -580,7 +584,7 @@ export async function importBlock(
     this.validatorMonitor?.registerSyncAggregateInBlock(
       blockEpoch,
       (block as altair.SignedBeaconBlock).message.body.syncAggregate,
-      fullyVerifiedBlock.postState.currentSyncCommitteeIndexed.validatorIndices
+      fullyVerifiedBlock.postState.currentSyncCommitteeValidatorIndices
     );
   }
 
@@ -594,7 +598,10 @@ export async function importBlock(
     }
   }
 
-  const advancedSlot = this.clock.slotWithFutureTolerance(REPROCESS_MIN_TIME_TO_NEXT_SLOT_SEC);
+  const reprocessGuardSec =
+    this.config.getSlotComponentDurationMs(this.config.getForkName(blockSlot), REPROCESS_MIN_TIME_TO_NEXT_SLOT_BPS) /
+    1000;
+  const advancedSlot = this.clock.slotWithFutureTolerance(reprocessGuardSec);
 
   // Gossip blocks need to be imported as soon as possible, waiting attestations could be processed
   // in the next event loop. See https://github.com/ChainSafe/lodestar/issues/4789
@@ -657,8 +664,12 @@ export function addAttestationPostElectra(
   } else {
     const attSlot = attestation.data.slot;
     const attEpoch = computeEpochAtSlot(attSlot);
-    const decisionRoot = state.getShufflingDecisionRoot(attEpoch);
-    const committees = this.shufflingCache.getBeaconCommittees(attEpoch, decisionRoot, attSlot, committeeIndices);
+    // calling getShufflingAtEpoch may take some time for NativeBeaconStateView
+    // we should have the shuffling inside ShufflingCache most of the time
+    const shuffling =
+      this.shufflingCache.getSync(attEpoch, state.getShufflingDecisionRoot(attEpoch)) ??
+      state.getShufflingAtEpoch(attEpoch);
+    const committees = getBeaconCommittees(shuffling, attSlot, committeeIndices);
     const aggregationBools = attestation.aggregationBits.toBoolArray();
     let offset = 0;
     for (let i = 0; i < committees.length; i++) {

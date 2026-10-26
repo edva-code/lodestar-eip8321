@@ -3,10 +3,19 @@ import path from "node:path";
 import {beforeEach, describe, it} from "vitest";
 import {pubkeyCache} from "@chainsafe/lodestar-z/pubkeys";
 import {defaultChainConfig} from "@lodestar/config";
-import {ACTIVE_PRESET, ForkName, PresetName} from "@lodestar/params";
+import {ACTIVE_PRESET, ForkName, ForkSeq, PresetName} from "@lodestar/params";
 import {describeDirectorySpecTest} from "@lodestar/spec-test-util";
 import {fromHex} from "@lodestar/utils";
+import {nativeStateTransition} from "./stateTransition.js";
 import {RunnerType, TestRunner} from "./types.js";
+
+let nativeStateTransitionPromise: Promise<typeof import("@chainsafe/lodestar-z/state-transition")> | null = null;
+
+async function resetNativeStateTransition(): Promise<void> {
+  nativeStateTransitionPromise ??= import("@chainsafe/lodestar-z/state-transition");
+  const nativeStateTransition = await nativeStateTransitionPromise;
+  nativeStateTransition.deinitReusedEpochTransitionCache();
+}
 
 // Pyspec builds EIP-8321 as a feature fork on top of heze with its own fork version, which signs every
 // generated vector. Lodestar ships EIP-8321 inside heze, so those vectors run as heze with that version.
@@ -23,6 +32,7 @@ const ARTIFACT_FILENAMES = new Set([
 
 export interface SkipOpts {
   skippedTestSuites?: RegExp[];
+  /** Matched against `<fork>/<runner>/<handler>/<suite>/<testCase>` */
   skippedTests?: RegExp[];
   skippedForks?: string[];
   skippedRunners?: string[];
@@ -120,7 +130,6 @@ export const defaultSkipOpts: SkipOpts = {
     "gossip_execution_payload_envelope",
     "gossip_payload_attestation_message",
     "gossip_proposer_preferences",
-    "gossip_inclusion_list",
   ],
 };
 
@@ -156,17 +165,19 @@ export function specTestIterator(
 ): void {
   const forkStrs = readdirSyncSpec(configDirpath);
   for (const forkStr of forkStrs) {
+    // eip8321 vectors run as heze
+    const fork = (forkStr === EIP8321_FORK_DIR ? ForkName.heze : forkStr) as ForkName;
     if (
       opts?.skippedForks?.includes(forkStr) ||
+      // lodestar-z supports state transition through Gloas.
+      (nativeStateTransition && ForkSeq[fork] > ForkSeq.gloas) ||
       (process.env.SPEC_FILTER_FORK && forkStr !== process.env.SPEC_FILTER_FORK) ||
       // Both run as heze with different fork versions, and the eip8321 vectors supersede the older heze ones
       (forkStr === ForkName.heze && forkStrs.includes(EIP8321_FORK_DIR))
     ) {
       continue;
     }
-    let fork = forkStr as ForkName;
     if (forkStr === EIP8321_FORK_DIR) {
-      fork = ForkName.heze;
       defaultChainConfig.HEZE_FORK_VERSION = fromHex(EIP8321_FORK_VERSION);
     }
 
@@ -230,7 +241,10 @@ export function specTestIterator(
               describeDirectorySpecTest(
                 testId,
                 testSuiteDirpath,
-                (testCase, directoryName, testCaseName) => {
+                async (testCase, directoryName, testCaseName) => {
+                  if (nativeStateTransition) {
+                    await resetNativeStateTransition();
+                  }
                   pubkeyCache.reset();
                   return testFunction(testCase, directoryName, testCaseName);
                 },

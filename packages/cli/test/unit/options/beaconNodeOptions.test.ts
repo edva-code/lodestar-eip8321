@@ -15,6 +15,7 @@ describe("options / beaconNodeOptions", () => {
     // Cast to match the expected fully defined type
     const beaconNodeArgsPartial = {
       "api.maxGindicesInProof": 1000,
+      "api.disableBidValidation": true,
       "rest.namespace": [],
       "rest.cors": "*",
       rest: true,
@@ -28,6 +29,7 @@ describe("options / beaconNodeOptions", () => {
       "chain.blsVerifyAllMainThread": true,
       "chain.disableBlsBatchVerify": true,
       "chain.persistProducedBlocks": true,
+      "chain.persistProducedPayloadEnvelopes": true,
       "chain.persistInvalidSszObjects": true,
       "chain.proposerBoost": false,
       "chain.proposerBoostReorg": false,
@@ -113,6 +115,7 @@ describe("options / beaconNodeOptions", () => {
     const expectedOptions: RecursivePartial<IBeaconNodeOptions> = {
       api: {
         maxGindicesInProof: 1000,
+        disableBidValidation: true,
         rest: {
           api: [],
           cors: "*",
@@ -129,6 +132,7 @@ describe("options / beaconNodeOptions", () => {
         blsVerifyAllMainThread: true,
         disableBlsBatchVerify: true,
         persistProducedBlocks: true,
+        persistProducedPayloadEnvelopes: true,
         persistInvalidSszObjects: true,
         proposerBoost: false,
         proposerBoostReorg: false,
@@ -148,7 +152,7 @@ describe("options / beaconNodeOptions", () => {
         archiveMode: ArchiveMode.Frequency,
         graffitiAppend: false,
         nHistoricalStatesFileDataStore: true,
-        nativeStateView: false,
+        nativeStateTransition: false,
         maxBlockStates: 100,
         maxCPStateEpochsInMemory: 100,
         maxCPStateEpochsOnDisk: 1000,

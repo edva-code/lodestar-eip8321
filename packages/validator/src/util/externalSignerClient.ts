@@ -1,6 +1,6 @@
 import {ContainerType, ValueOf} from "@chainsafe/ssz";
 import {BeaconConfig} from "@lodestar/config";
-import {ForkName, ForkPostGloas, ForkPreBellatrix, ForkSeq, isForkPostDeneb} from "@lodestar/params";
+import {ForkName, ForkPostGloas, ForkSeq, isForkPostDeneb} from "@lodestar/params";
 import {blindedOrFullBlockToHeader, computeEpochAtSlot} from "@lodestar/state-transition";
 import {
   AggregateAndProof,
@@ -39,6 +39,7 @@ export enum SignableMessageType {
   PROPOSER_PREFERENCES = "PROPOSER_PREFERENCES",
   BUILDER_REQUEST_AUTH = "BUILDER_REQUEST_AUTH",
   RANDAO_COMMITMENT_REGISTRATION = "RANDAO_COMMITMENT_REGISTRATION",
+  INCLUSION_LIST = "INCLUSION_LIST",
 }
 
 const AggregationSlotType = new ContainerType({
@@ -80,7 +81,7 @@ export type SignableMessage =
   | {type: SignableMessageType.AGGREGATE_AND_PROOF; data: phase0.AggregateAndProof}
   | {type: SignableMessageType.AGGREGATE_AND_PROOF_V2; data: AggregateAndProof}
   | {type: SignableMessageType.ATTESTATION; data: phase0.AttestationData}
-  | {type: SignableMessageType.BLOCK_V2; data: BeaconBlock<ForkPreBellatrix> | BlindedBeaconBlock}
+  | {type: SignableMessageType.BLOCK_V2; data: BeaconBlock | BlindedBeaconBlock}
   | {type: SignableMessageType.DEPOSIT; data: ValueOf<typeof DepositType>}
   | {type: SignableMessageType.RANDAO_REVEAL; data: {epoch: Epoch}}
   | {type: SignableMessageType.VOLUNTARY_EXIT; data: phase0.VoluntaryExit}
@@ -92,6 +93,7 @@ export type SignableMessage =
   | {type: SignableMessageType.PAYLOAD_ATTESTATION_MESSAGE; data: gloas.PayloadAttestationData}
   | {type: SignableMessageType.PROPOSER_PREFERENCES; data: gloas.ProposerPreferences}
   | {type: SignableMessageType.BUILDER_REQUEST_AUTH; data: gloas.BuilderRequestAuth}
+  | {type: SignableMessageType.INCLUSION_LIST; data: heze.InclusionList}
   | {type: SignableMessageType.RANDAO_COMMITMENT_REGISTRATION; data: heze.RandaoCommitmentRegistration};
 
 const requiresForkInfo: Record<SignableMessageType, boolean> = {
@@ -111,6 +113,7 @@ const requiresForkInfo: Record<SignableMessageType, boolean> = {
   [SignableMessageType.PAYLOAD_ATTESTATION_MESSAGE]: true,
   [SignableMessageType.PROPOSER_PREFERENCES]: true,
   [SignableMessageType.BUILDER_REQUEST_AUTH]: false,
+  [SignableMessageType.INCLUSION_LIST]: true,
   // Signed with the genesis fork version domain, like validator registrations
   [SignableMessageType.RANDAO_COMMITMENT_REGISTRATION]: false,
 };
@@ -324,6 +327,9 @@ function serializerSignableMessagePayload(config: BeaconConfig, payload: Signabl
         },
       };
     }
+
+    case SignableMessageType.INCLUSION_LIST:
+      return {inclusion_list: ssz.heze.InclusionList.toJson(payload.data)};
 
     case SignableMessageType.RANDAO_COMMITMENT_REGISTRATION:
       return {randao_commitment_registration: ssz.heze.RandaoCommitmentRegistration.toJson(payload.data)};
