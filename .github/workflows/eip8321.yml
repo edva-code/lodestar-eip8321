@@ -12,11 +12,11 @@ permissions:
 
 on:
   push:
-    branches: [eip-8321-hash-chain-randao]
+    branches: [eip-8321-hash-chain-randao, eip-8321-devnet-2]
   workflow_dispatch:
 
 env:
-  SPEC_REF: v1.7.0-beta.3
+  SPEC_REF: v1.7.0-beta.4
   # Bump to regenerate the cached vectors
   VECTORS_CACHE_VERSION: 1
   SHARDS: 6
