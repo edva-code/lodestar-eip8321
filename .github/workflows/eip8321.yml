@@ -1,10 +1,13 @@
 name: EIP-8321
 
-# Generates the EIP-8321 reference tests from consensus-specs (they are not published as a release
-# artifact) and runs them against Lodestar on GitHub-hosted runners.
+# Every run tests Lodestar against the official consensus-specs release vectors (gloas, heze) and the
+# community EIP-8321 vectors from lukassta/consensus-specs, which are built on master after SPEC_REF.
+# A manual run with `generate` also builds EIP-8321 vectors from official SPEC_REF, the exact base of
+# heze-devnet-2, and runs them. Generation takes hours.
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # A push must not cancel a manual run that is still generating vectors
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 permissions:
@@ -12,18 +15,63 @@ permissions:
 
 on:
   push:
-    branches: [eip-8321-hash-chain-randao]
+    branches: [devnet-2-real]
   workflow_dispatch:
+    inputs:
+      generate:
+        description: Generate EIP-8321 vectors from official SPEC_REF
+        type: boolean
+        default: false
 
 env:
-  SPEC_REF: v1.7.0-beta.3
+  # Must match packages/beacon-node/spec-tests-version.json
+  SPEC_REF: v1.7.0-beta.4
+  EIP8321_VECTORS_URL: https://github.com/lukassta/consensus-specs/releases/download/v1.7.0-eip8321.1
   # Bump to regenerate the cached vectors
   VECTORS_CACHE_VERSION: 1
   SHARDS: 6
 
 jobs:
+  release-vectors:
+    name: Release vectors (minimal)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: "./.github/actions/setup-and-build"
+        with:
+          node: 24
+
+      - name: Download official vectors
+        working-directory: packages/beacon-node
+        run: pnpm download-spec-tests
+
+      - name: Restore EIP-8321 vectors
+        id: eip8321-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: packages/beacon-node/spec-tests/tests/minimal/eip8321
+          key: eip8321-release-vectors-${{ env.EIP8321_VECTORS_URL }}-minimal
+
+      # Only the eip8321 fork dir is taken, every other fork comes from the official release
+      - name: Download EIP-8321 vectors
+        if: steps.eip8321-cache.outputs.cache-hit != 'true'
+        working-directory: packages/beacon-node/spec-tests
+        run: |
+          curl -fsSL "$EIP8321_VECTORS_URL/minimal.tar.gz" | tar -xz tests/minimal/eip8321
+          du -sh tests/minimal/eip8321
+
+      - name: Spec tests
+        working-directory: packages/beacon-node
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: |
+          for fork in gloas heze eip8321; do
+            SPEC_FILTER_FORK=$fork pnpm vitest run --project spec-minimal test/spec/presets/
+          done
+
   vectors:
     name: Generate vectors (${{ matrix.preset }} ${{ matrix.shard }})
+    if: github.event_name == 'workflow_dispatch' && inputs.generate
     runs-on: ubuntu-latest
     timeout-minutes: 350
     strategy:
@@ -76,7 +124,7 @@ jobs:
           retention-days: 7
 
   spec-tests:
-    name: Spec tests (${{ matrix.preset }})
+    name: Generated vector spec tests (${{ matrix.preset }})
     needs: vectors
     runs-on: ubuntu-latest
     strategy:
@@ -126,12 +174,16 @@ jobs:
             packages/beacon-node/test/unit/api/impl/beacon/pool/randaoCommitmentRegistrations.test.ts \
             packages/beacon-node/test/unit/chain/opPools/randaoCommitmentRegistrationPool.test.ts \
             packages/beacon-node/test/unit/chain/produceBlock/applyHashChainReveal.test.ts \
+            packages/beacon-node/test/unit/chain/produceBlock/setHezeRandaoFields.test.ts \
+            packages/beacon-node/test/unit/chain/validation/randaoCommitmentRegistration.test.ts \
             packages/beacon-node/test/unit/network/gossip/topic.test.ts \
             packages/state-transition/test/unit/block/addValidatorToRegistry.test.ts \
             packages/state-transition/test/unit/block/processRandao.test.ts \
             packages/state-transition/test/unit/block/processRandaoCommitmentRegistration.test.ts \
             packages/state-transition/test/unit/epoch/processPendingRandaoCommitments.test.ts \
+            packages/state-transition/test/unit/signatureSets/hezeBlockSignatureSets.test.ts \
             packages/state-transition/test/unit/slot/upgradeStateToHeze.test.ts \
             packages/state-transition/test/unit/util/blake3.test.ts \
+            packages/validator/test/unit/services/randaoCommitment.test.ts \
             packages/validator/test/unit/util/hashChain.test.ts \
             packages/validator/test/unit/validatorStore.test.ts

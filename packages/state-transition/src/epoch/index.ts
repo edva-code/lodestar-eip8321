@@ -15,6 +15,7 @@ import {
   CachedBeaconStateGloas,
   CachedBeaconStateHeze,
   CachedBeaconStatePhase0,
+  CachedBeaconStatePreHeze,
   EpochTransitionCache,
 } from "../types.js";
 import {processBuilderPendingPayments} from "./processBuilderPendingPayments.js";
@@ -152,7 +153,9 @@ export function processEpoch(
     timer?.();
   }
 
-  processEth1DataReset(state, cache);
+  if (fork < ForkSeq.heze) {
+    processEth1DataReset(state as CachedBeaconStatePreHeze, cache);
+  }
 
   if (fork >= ForkSeq.electra) {
     const stateElectra = state as CachedBeaconStateElectra;

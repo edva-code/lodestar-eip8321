@@ -15,8 +15,8 @@ import {ssz as primitiveSsz} from "../primitive/index.js";
 
 const {Slot, Root, BLSSignature, ValidatorIndex, Bytes32, Epoch} = primitiveSsz;
 
-function activeFields(count: number): boolean[] {
-  return Array.from({length: count}, () => true);
+function activeFields(count: number, gaps: number[] = []): boolean[] {
+  return Array.from({length: count}, (_, index) => !gaps.includes(index));
 }
 
 export const InclusionListCommittee = new VectorBasicType(ValidatorIndex, INCLUSION_LIST_COMMITTEE_SIZE);
@@ -107,25 +107,37 @@ export const PendingRandaoCommitments = new ProgressiveListCompositeType(Pending
   typeName: "PendingRandaoCommitments",
 });
 
+const {
+  eth1Data: _eth1Data,
+  eth1DataVotes: _eth1DataVotes,
+  eth1DepositIndex: _eth1DepositIndex,
+  depositRequestsStartIndex: _depositRequestsStartIndex,
+  ...gloasBeaconStateFields
+} = gloasSsz.BeaconState.fields;
+
 export const BeaconState = new ProgressiveContainerType(
   {
-    ...gloasSsz.BeaconState.fields,
+    ...gloasBeaconStateFields,
     latestExecutionPayloadBid: ExecutionPayloadBid, // [Modified in Heze:EIP7805]
     randaoCommitments: RandaoCommitments, // [New in Heze:EIP8321]
     pendingRandaoCommitments: PendingRandaoCommitments, // [New in Heze:EIP8321]
   },
-  activeFields(48),
+  // [Modified in Heze:EIP8015] gaps keep the surviving generalized indices stable
+  activeFields(48, [8, 9, 10, 28]),
   {typeName: "BeaconState", jsonCase: "eth2"}
 );
 
+const {eth1Data: _bodyEth1Data, deposits: _deposits, ...gloasBeaconBlockBodyFields} = gloasSsz.BeaconBlockBody.fields;
+
 export const BeaconBlockBody = new ProgressiveContainerType(
   {
-    ...gloasSsz.BeaconBlockBody.fields,
+    ...gloasBeaconBlockBodyFields,
     signedExecutionPayloadBid: SignedExecutionPayloadBid, // [Modified in Heze:EIP7805]
     hashChainReveal: Bytes32, // [New in Heze:EIP8321]
     randaoCommitmentRegistrations: RandaoCommitmentRegistrations, // [New in Heze:EIP8321]
   },
-  activeFields(15),
+  // [Modified in Heze:EIP8015] gaps keep the surviving generalized indices stable
+  activeFields(15, [1, 6]),
   {typeName: "BeaconBlockBody", jsonCase: "eth2", cachePermanentRootStruct: true}
 );
 
