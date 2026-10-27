@@ -435,7 +435,7 @@ describe("ValidatorStore", () => {
             index: 0,
             balance: 32e9,
             status: "active_ongoing",
-            validator: {pubkey: pubkeys[0]} as any,
+            validator: {...ssz.phase0.Validator.defaultValue(), pubkey: pubkeys[0]},
           },
         ],
         meta: {executionOptimistic: false, finalized: false},
