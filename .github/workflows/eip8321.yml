@@ -1,6 +1,6 @@
 name: EIP-8321
 
-# Every run tests Lodestar against all vectors (minimal, mainnet, general, comptests) of the community
+# Every run tests Lodestar against the minimal, mainnet and general vectors of the community
 # release lukassta/consensus-specs v1.7.0-eip8321.1, which is built on master after SPEC_REF.
 # A manual run with `generate` also builds EIP-8321 vectors from official SPEC_REF, the exact base of
 # heze-devnet-2, and runs them. Generation takes hours.
@@ -48,7 +48,7 @@ jobs:
         with:
           node: 24
 
-      # fork_choice_compliance is run by the comptests job
+      # fork_choice_compliance (comptests) is large and unrelated to EIP-8321
       - name: Download vectors
         working-directory: packages/beacon-node
         run: |
@@ -63,36 +63,6 @@ jobs:
           SPEC_FILTER_FORK: ${{ matrix.fork }}
           NODE_OPTIONS: --max-old-space-size=4096
         run: pnpm vitest run --project spec-${{ matrix.preset }} test/spec/presets/
-
-  release-comptests:
-    name: Comptests (${{ matrix.fork }})
-    runs-on: ubuntu-latest
-    timeout-minutes: 350
-    strategy:
-      fail-fast: false
-      matrix:
-        # heze and eip8321 have no compliance vectors in the release
-        fork: [altair, bellatrix, capella, deneb, electra, fulu, gloas]
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: "./.github/actions/setup-and-build"
-        with:
-          node: 24
-
-      - name: Download vectors
-        working-directory: packages/beacon-node
-        run: |
-          mkdir -p spec-tests-comptests
-          curl -fsSL "$EIP8321_VECTORS_URL/comptests.tar.gz" \
-            | tar -xz -C spec-tests-comptests tests/minimal/${{ matrix.fork }}/fork_choice_compliance
-          du -sh spec-tests-comptests/tests/minimal/${{ matrix.fork }}/fork_choice_compliance
-
-      - name: Comptests
-        working-directory: packages/beacon-node
-        env:
-          SPEC_FILTER_FORK: ${{ matrix.fork }}
-          NODE_OPTIONS: --max-old-space-size=4096
-        run: pnpm test:comptest
 
   release-general:
     name: Vectors (general)
