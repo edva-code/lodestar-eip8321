@@ -102,7 +102,7 @@ export const defaultSkipOpts: SkipOpts = {
     /^heze\/(epoch_processing|fast_confirmation|finality|fork|fork_choice|operations|random|rewards|sanity|transition)\/.*$/,
     /^heze\/ssz_static\/(BeaconState|BeaconBlockBody|BeaconBlock|SignedBeaconBlock)\/.*$/,
     /^heze\/light_client\/single_merkle_proof\/.*$/,
-    /^heze\/networking\/gossip_(attester_slashing|bls_to_execution_change|proposer_slashing|sync_committee_contribution_and_proof|sync_committee_message)\/.*$/,
+    /^heze\/networking\/gossip_(attester_slashing|bls_to_execution_change|inclusion_list|proposer_slashing|sync_committee_contribution_and_proof|sync_committee_message)\/.*$/,
     // Pyspec upgrades a heze pre-state without the EIP-8321 fields, a layout Lodestar's heze does not have.
     /^eip8321\/fork\/.*$/,
   ],
