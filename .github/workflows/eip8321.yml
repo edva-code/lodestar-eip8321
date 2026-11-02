@@ -1,7 +1,7 @@
 name: EIP-8321
 
-# Every run tests Lodestar against the official consensus-specs release vectors (gloas, heze) and the
-# community EIP-8321 vectors from lukassta/consensus-specs, which are built on master after SPEC_REF.
+# Every run tests Lodestar against all vectors (minimal, mainnet, general, comptests) of the community
+# release lukassta/consensus-specs v1.7.0-eip8321.1, which is built on master after SPEC_REF.
 # A manual run with `generate` also builds EIP-8321 vectors from official SPEC_REF, the exact base of
 # heze-devnet-2, and runs them. Generation takes hours.
 
@@ -32,8 +32,70 @@ env:
   SHARDS: 6
 
 jobs:
+  # Every fork of every suite in the lukassta release, one job each so GitHub shows pass/fail per fork.
+  # Tarballs are streamed and only the needed dir is extracted to stay within the runner disk.
   release-vectors:
-    name: Release vectors (minimal)
+    name: Vectors (${{ matrix.preset }} ${{ matrix.fork }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [minimal, mainnet]
+        fork: [phase0, altair, bellatrix, capella, deneb, electra, fulu, gloas, heze, eip8321]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: "./.github/actions/setup-and-build"
+        with:
+          node: 24
+
+      # fork_choice_compliance is run by the comptests job
+      - name: Download vectors
+        working-directory: packages/beacon-node
+        run: |
+          mkdir -p spec-tests
+          curl -fsSL "$EIP8321_VECTORS_URL/${{ matrix.preset }}.tar.gz" \
+            | tar -xz -C spec-tests --exclude='tests/*/*/fork_choice_compliance' tests/${{ matrix.preset }}/${{ matrix.fork }}
+          du -sh spec-tests/tests/${{ matrix.preset }}/${{ matrix.fork }}/*
+
+      - name: Spec tests
+        working-directory: packages/beacon-node
+        env:
+          SPEC_FILTER_FORK: ${{ matrix.fork }}
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: pnpm vitest run --project spec-${{ matrix.preset }} test/spec/presets/
+
+  release-comptests:
+    name: Comptests (${{ matrix.fork }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      matrix:
+        # heze and eip8321 have no compliance vectors in the release
+        fork: [altair, bellatrix, capella, deneb, electra, fulu, gloas]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: "./.github/actions/setup-and-build"
+        with:
+          node: 24
+
+      - name: Download vectors
+        working-directory: packages/beacon-node
+        run: |
+          mkdir -p spec-tests-comptests
+          curl -fsSL "$EIP8321_VECTORS_URL/comptests.tar.gz" \
+            | tar -xz -C spec-tests-comptests tests/minimal/${{ matrix.fork }}/fork_choice_compliance
+          du -sh spec-tests-comptests/tests/minimal/${{ matrix.fork }}/fork_choice_compliance
+
+      - name: Comptests
+        working-directory: packages/beacon-node
+        env:
+          SPEC_FILTER_FORK: ${{ matrix.fork }}
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: pnpm test:comptest
+
+  release-general:
+    name: Vectors (general)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -41,33 +103,15 @@ jobs:
         with:
           node: 24
 
-      - name: Download official vectors
+      - name: Download vectors
         working-directory: packages/beacon-node
-        run: pnpm download-spec-tests
-
-      - name: Restore EIP-8321 vectors
-        id: eip8321-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: packages/beacon-node/spec-tests/tests/minimal/eip8321
-          key: eip8321-release-vectors-${{ env.EIP8321_VECTORS_URL }}-minimal
-
-      # Only the eip8321 fork dir is taken, every other fork comes from the official release
-      - name: Download EIP-8321 vectors
-        if: steps.eip8321-cache.outputs.cache-hit != 'true'
-        working-directory: packages/beacon-node/spec-tests
         run: |
-          curl -fsSL "$EIP8321_VECTORS_URL/minimal.tar.gz" | tar -xz tests/minimal/eip8321
-          du -sh tests/minimal/eip8321
+          mkdir -p spec-tests
+          curl -fsSL "$EIP8321_VECTORS_URL/general.tar.gz" | tar -xz -C spec-tests tests/general
 
       - name: Spec tests
         working-directory: packages/beacon-node
-        env:
-          NODE_OPTIONS: --max-old-space-size=4096
-        run: |
-          for fork in gloas heze eip8321; do
-            SPEC_FILTER_FORK=$fork pnpm vitest run --project spec-minimal test/spec/presets/
-          done
+        run: pnpm vitest run --project spec-minimal test/spec/general/index.test.ts
 
   vectors:
     name: Generate vectors (${{ matrix.preset }} ${{ matrix.shard }})
