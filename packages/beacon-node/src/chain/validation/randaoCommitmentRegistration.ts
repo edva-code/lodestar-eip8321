@@ -1,6 +1,6 @@
 import {ZERO_HASH} from "@lodestar/params";
-import {getRandaoCommitmentRegistrationSignatureSet, isStatePostHeze} from "@lodestar/state-transition";
-import {heze} from "@lodestar/types";
+import {getRandaoCommitmentRegistrationSignatureSet, isStatePostEip8321} from "@lodestar/state-transition";
+import {eip8321} from "@lodestar/types";
 import {byteArrayEquals} from "@lodestar/utils";
 import {
   GossipAction,
@@ -12,7 +12,7 @@ import {RegenCaller} from "../regen/index.js";
 
 export async function validateGossipRandaoCommitmentRegistration(
   chain: IBeaconChain,
-  signedRegistration: heze.SignedRandaoCommitmentRegistration
+  signedRegistration: eip8321.SignedRandaoCommitmentRegistration
 ): Promise<void> {
   const {validatorIndex, commitment} = signedRegistration.message;
 
@@ -25,10 +25,10 @@ export async function validateGossipRandaoCommitmentRegistration(
 
   const state = await chain.getHeadStateAtCurrentEpoch(RegenCaller.validateGossipRandaoCommitmentRegistration);
 
-  // Near the fork boundary the head state can still be pre-heze
-  if (!isStatePostHeze(state)) {
+  // Near the fork boundary the head state can still be pre-eip8321
+  if (!isStatePostEip8321(state)) {
     throw new RandaoCommitmentRegistrationError(GossipAction.IGNORE, {
-      code: RandaoCommitmentRegistrationErrorCode.PRE_HEZE,
+      code: RandaoCommitmentRegistrationErrorCode.PRE_EIP8321,
     });
   }
 

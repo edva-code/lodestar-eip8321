@@ -349,11 +349,16 @@ export function upgradeLightClientHeader(
       // Break if no further upgrades is required else fall through
       if (ForkSeq[targetFork] <= ForkSeq.gloas) break;
 
+    // biome-ignore lint/suspicious/noFallthroughSwitchClause: We need fall-through behavior here
     case ForkName.heze:
       // No changes to LightClientHeader in Heze
 
       // Break if no further upgrades is required else fall through
       if (ForkSeq[targetFork] <= ForkSeq.heze) break;
+
+    case ForkName.eip8321:
+      // No changes to LightClientHeader in EIP-8321
+      if (ForkSeq[targetFork] <= ForkSeq.eip8321) break;
   }
   return upgradedHeader;
 }

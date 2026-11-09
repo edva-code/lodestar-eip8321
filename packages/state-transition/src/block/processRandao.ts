@@ -1,10 +1,10 @@
 import {digest} from "@chainsafe/as-sha256";
-import {EPOCHS_PER_HISTORICAL_VECTOR, ForkPostHeze, ForkSeq} from "@lodestar/params";
+import {EPOCHS_PER_HISTORICAL_VECTOR, ForkPostEip8321, ForkSeq} from "@lodestar/params";
 import {BeaconBlock} from "@lodestar/types";
 import {byteArrayEquals, xor} from "@lodestar/utils";
 import {G2_POINT_AT_INFINITY, ZERO_HASH} from "../constants/constants.js";
 import {verifyRandaoSignature} from "../signatureSets/index.js";
-import {CachedBeaconStateAllForks, CachedBeaconStateHeze} from "../types.js";
+import {CachedBeaconStateAllForks, CachedBeaconStateEip8321} from "../types.js";
 import {blake3Hash, getRandaoMix, hashChainStep} from "../util/index.js";
 
 /**
@@ -18,11 +18,11 @@ export function processRandao(state: CachedBeaconStateAllForks, block: BeaconBlo
   const randaoReveal = block.body.randaoReveal;
   const mixIndex = epoch % EPOCHS_PER_HISTORICAL_VECTOR;
 
-  if (config.getForkSeq(state.slot) >= ForkSeq.heze) {
-    const stateHeze = state as CachedBeaconStateHeze;
-    const {hashChainReveal} = (block as BeaconBlock<ForkPostHeze>).body;
+  if (config.getForkSeq(state.slot) >= ForkSeq.eip8321) {
+    const stateEip8321 = state as CachedBeaconStateEip8321;
+    const {hashChainReveal} = (block as BeaconBlock<ForkPostEip8321>).body;
     // block.proposerIndex is already checked against the expected proposer in processBlockHeader
-    const commitment = stateHeze.randaoCommitments.get(block.proposerIndex);
+    const commitment = stateEip8321.randaoCommitments.get(block.proposerIndex);
 
     if (!byteArrayEquals(commitment, ZERO_HASH)) {
       if (byteArrayEquals(hashChainReveal, ZERO_HASH)) {
@@ -36,8 +36,8 @@ export function processRandao(state: CachedBeaconStateAllForks, block: BeaconBlo
       }
 
       const randaoMix = blake3Hash(Buffer.concat([getRandaoMix(state, epoch), hashChainReveal]));
-      stateHeze.randaoMixes.set(mixIndex, randaoMix);
-      stateHeze.randaoCommitments.set(block.proposerIndex, hashChainReveal);
+      stateEip8321.randaoMixes.set(mixIndex, randaoMix);
+      stateEip8321.randaoCommitments.set(block.proposerIndex, hashChainReveal);
       return;
     }
 

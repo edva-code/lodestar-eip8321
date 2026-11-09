@@ -31,8 +31,8 @@ import {
   hashChainStep,
   isStatePostBellatrix,
   isStatePostCapella,
+  isStatePostEip8321,
   isStatePostGloas,
-  isStatePostHeze,
 } from "@lodestar/state-transition";
 import {
   BLSPubkey,
@@ -55,6 +55,7 @@ import {
   bellatrix,
   capella,
   deneb,
+  eip8321,
   electra,
   fulu,
   gloas,
@@ -183,7 +184,7 @@ export type ProduceResult =
   | ProduceBlinded;
 
 export function applyHashChainReveal(
-  body: Pick<heze.BeaconBlockBody, "hashChainReveal" | "randaoReveal">,
+  body: Pick<eip8321.BeaconBlockBody, "hashChainReveal" | "randaoReveal">,
   hashChainReveal: Bytes32 = ZERO_HASH
 ): void {
   body.hashChainReveal = hashChainReveal;
@@ -192,7 +193,7 @@ export function applyHashChainReveal(
   }
 }
 
-export function setHezeRandaoFields(
+export function setEip8321RandaoFields(
   chain: BeaconChain,
   body: BeaconBlockBody<ForkPostGloas>,
   state: IBeaconStateView,
@@ -200,18 +201,18 @@ export function setHezeRandaoFields(
   proposerIndex: ValidatorIndex,
   hashChainReveal: Bytes32 | undefined
 ): void {
-  if (ForkSeq[fork] < ForkSeq.heze) return;
-  const hezeBody = body as heze.BeaconBlockBody;
-  const commitment = isStatePostHeze(state) ? state.getRandaoCommitment(proposerIndex) : ZERO_HASH;
+  if (ForkSeq[fork] < ForkSeq.eip8321) return;
+  const eip8321Body = body as eip8321.BeaconBlockBody;
+  const commitment = isStatePostEip8321(state) ? state.getRandaoCommitment(proposerIndex) : ZERO_HASH;
   // Unregistered proposers must use the BLS reveal, registered ones must reveal the preimage of their commitment
   if (byteArrayEquals(commitment, ZERO_HASH)) {
-    applyHashChainReveal(hezeBody, ZERO_HASH);
+    applyHashChainReveal(eip8321Body, ZERO_HASH);
   } else if (hashChainReveal === undefined || !byteArrayEquals(hashChainStep(hashChainReveal), commitment)) {
     throw Error(`Missing or invalid hash chain reveal for registered proposer ${proposerIndex}`);
   } else {
-    applyHashChainReveal(hezeBody, hashChainReveal);
+    applyHashChainReveal(eip8321Body, hashChainReveal);
   }
-  hezeBody.randaoCommitmentRegistrations = isStatePostHeze(state)
+  eip8321Body.randaoCommitmentRegistrations = isStatePostEip8321(state)
     ? chain.randaoCommitmentRegistrationPool.getForBlock((registration) =>
         isRandaoCommitmentRegistrationIncludable(state, registration)
       )
@@ -309,7 +310,7 @@ export async function produceBlockBody<T extends BlockType>(
     gloasBody.voluntaryExits = maybeFilterInvalidatedVoluntaryExits(commonBlockBody, isExtendingPayload, () =>
       currentState.withParentPayloadApplied(parentExecutionRequests)
     );
-    setHezeRandaoFields(this, gloasBody, currentState, fork, blockAttr.proposerIndex, blockAttr.hashChainReveal);
+    setEip8321RandaoFields(this, gloasBody, currentState, fork, blockAttr.proposerIndex, blockAttr.hashChainReveal);
     blockBody = gloasBody as AssembledBodyType<T>;
 
     this.logger.verbose("Produced block with builder bid", {
@@ -466,7 +467,7 @@ export async function produceBlockBody<T extends BlockType>(
       isBuildingOnFull,
       () => stateAfterParentPayload
     );
-    setHezeRandaoFields(this, gloasBody, currentState, fork, blockAttr.proposerIndex, blockAttr.hashChainReveal);
+    setEip8321RandaoFields(this, gloasBody, currentState, fork, blockAttr.proposerIndex, blockAttr.hashChainReveal);
     blockBody = gloasBody as AssembledBodyType<T>;
 
     // Store execution payload data required to construct execution payload envelope later

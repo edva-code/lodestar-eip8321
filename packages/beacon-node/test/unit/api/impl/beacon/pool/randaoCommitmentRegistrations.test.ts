@@ -1,11 +1,11 @@
 import {beforeEach, describe, expect, it, vi} from "vitest";
-import {heze} from "@lodestar/types";
+import {eip8321} from "@lodestar/types";
 import {getBeaconPoolApi} from "../../../../../../src/api/impl/beacon/pool/index.js";
 import {RandaoCommitmentRegistrationPool} from "../../../../../../src/chain/opPools/randaoCommitmentRegistrationPool.js";
 import {ApiTestModules, getApiTestModules} from "../../../../../utils/api.js";
 
 describe("api - beacon - pool - randao commitment registrations", () => {
-  const registration: heze.SignedRandaoCommitmentRegistration = {
+  const registration: eip8321.SignedRandaoCommitmentRegistration = {
     message: {validatorIndex: 1, commitment: Buffer.alloc(32, 0xab)},
     signature: Buffer.alloc(96, 0),
   };

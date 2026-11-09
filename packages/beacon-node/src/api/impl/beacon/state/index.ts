@@ -12,10 +12,10 @@ import {
   computeStartSlotAtEpoch,
   getCurrentEpoch,
   isStatePostAltair,
+  isStatePostEip8321,
   isStatePostElectra,
   isStatePostFulu,
   isStatePostGloas,
-  isStatePostHeze,
 } from "@lodestar/state-transition";
 import {
   BuilderIndex,
@@ -91,8 +91,8 @@ export function getBeaconStateApi({
 
     async getStateRandaoCommitment({stateId, validatorIndex}) {
       const {state, executionOptimistic, finalized} = await getState(stateId);
-      if (!isStatePostHeze(state)) {
-        throw new ApiError(400, `Randao commitments are not supported before Heze fork=${state.forkName}`);
+      if (!isStatePostEip8321(state)) {
+        throw new ApiError(400, `Randao commitments are not supported before Eip8321 fork=${state.forkName}`);
       }
       if (validatorIndex >= state.validatorCount) {
         throw new ApiError(404, `Validator index ${validatorIndex} not found`);

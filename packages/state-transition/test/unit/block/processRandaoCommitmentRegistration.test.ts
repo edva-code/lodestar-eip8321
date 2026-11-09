@@ -10,9 +10,9 @@ import {computeSigningRoot, interopSecretKeys} from "../../../src/util/index.js"
 
 const sk = interopSecretKeys(1)[0];
 
-function buildHezeState(storedCommitment = new Uint8Array(32)) {
-  const config = getConfig(ForkName.heze);
-  const view = ssz.heze.BeaconState.defaultViewDU();
+function buildEip8321State(storedCommitment = new Uint8Array(32)) {
+  const config = getConfig(ForkName.eip8321);
+  const view = ssz.eip8321.BeaconState.defaultViewDU();
   view.validators.push(
     ssz.phase0.Validator.toViewDU({...ssz.phase0.Validator.defaultValue(), pubkey: sk.toPublicKey().toBytes()})
   );
@@ -33,7 +33,7 @@ describe("processRandaoCommitmentRegistration", () => {
   const commitment = new Uint8Array(32).fill(0x11);
 
   it("queues a pending commitment", () => {
-    const state = buildHezeState();
+    const state = buildEip8321State();
     processRandaoCommitmentRegistration(state, registration(0, commitment), false);
     expect(state.pendingRandaoCommitments.toValue()).toEqual([
       {validatorIndex: 0, commitment, activationEpoch: COMMITMENT_REGISTRATION_DELAY},
@@ -42,10 +42,10 @@ describe("processRandaoCommitmentRegistration", () => {
   });
 
   it("verifies the registration signature", () => {
-    const state = buildHezeState();
+    const state = buildEip8321State();
     const message = {validatorIndex: 0, commitment};
     const domain = state.config.getDomainAtFork(ForkName.phase0, DOMAIN_RANDAO_COMMITMENT_REGISTRATION);
-    const signature = sk.sign(computeSigningRoot(ssz.heze.RandaoCommitmentRegistration, message, domain)).toBytes();
+    const signature = sk.sign(computeSigningRoot(ssz.eip8321.RandaoCommitmentRegistration, message, domain)).toBytes();
     expect(() => processRandaoCommitmentRegistration(state, {message, signature: new Uint8Array(96)})).toThrow(
       "Invalid randao commitment registration signature"
     );
@@ -54,26 +54,26 @@ describe("processRandaoCommitmentRegistration", () => {
   });
 
   it("rejects a second registration while one is pending", () => {
-    const state = buildHezeState();
+    const state = buildEip8321State();
     processRandaoCommitmentRegistration(state, registration(0, commitment), false);
     expect(() => processRandaoCommitmentRegistration(state, registration(0, commitment), false)).toThrow("pending");
   });
 
   it("rejects unknown validator", () => {
-    expect(() => processRandaoCommitmentRegistration(buildHezeState(), registration(1, commitment), false)).toThrow(
+    expect(() => processRandaoCommitmentRegistration(buildEip8321State(), registration(1, commitment), false)).toThrow(
       "validatorIndex"
     );
   });
 
   it("rejects zero commitment", () => {
     expect(() =>
-      processRandaoCommitmentRegistration(buildHezeState(), registration(0, new Uint8Array(32)), false)
+      processRandaoCommitmentRegistration(buildEip8321State(), registration(0, new Uint8Array(32)), false)
     ).toThrow("zero commitment");
   });
 
   it("rejects already registered validator", () => {
     expect(() =>
-      processRandaoCommitmentRegistration(buildHezeState(commitment), registration(0, commitment), false)
+      processRandaoCommitmentRegistration(buildEip8321State(commitment), registration(0, commitment), false)
     ).toThrow("already has a randao commitment");
   });
 });

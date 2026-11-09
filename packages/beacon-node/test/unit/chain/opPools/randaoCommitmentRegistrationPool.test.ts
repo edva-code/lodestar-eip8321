@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, it} from "vitest";
 import {MAX_RANDAO_COMMITMENT_REGISTRATIONS} from "@lodestar/params";
-import {heze} from "@lodestar/types";
+import {eip8321} from "@lodestar/types";
 import {
   RandaoCommitmentRegistrationPool,
   isRandaoCommitmentRegistrationIncludable,
@@ -32,7 +32,7 @@ describe("chain / opPools / RandaoCommitmentRegistrationPool", () => {
     });
   });
 
-  const makeRegistration = (validatorIndex: number, fill = 0xab): heze.SignedRandaoCommitmentRegistration => ({
+  const makeRegistration = (validatorIndex: number, fill = 0xab): eip8321.SignedRandaoCommitmentRegistration => ({
     message: {validatorIndex, commitment: Buffer.alloc(32, fill)},
     signature: Buffer.alloc(96, 0),
   });
@@ -42,7 +42,7 @@ describe("chain / opPools / RandaoCommitmentRegistrationPool", () => {
     pool = new RandaoCommitmentRegistrationPool();
   });
 
-  const indices = (registrations: heze.SignedRandaoCommitmentRegistration[]): number[] =>
+  const indices = (registrations: eip8321.SignedRandaoCommitmentRegistration[]): number[] =>
     registrations.map((r) => r.message.validatorIndex);
 
   it("stores a registration and reports it as seen", () => {

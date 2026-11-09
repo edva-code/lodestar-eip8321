@@ -279,6 +279,7 @@ function getDataAvailabilityStatusForFork(fork: ForkName): DataAvailabilityStatu
     case ForkName.fulu:
     case ForkName.gloas:
     case ForkName.heze:
+    case ForkName.eip8321:
       return DataAvailabilityStatus.Available;
 
     default:
@@ -355,8 +356,6 @@ export async function runGossipValidationTest(
   const anchorState = loadState(testCaseDir, fork);
   const testCaseConfig = {
     ...getConfig(fork),
-    // Pyspec signs eip8321 vectors with their own fork version, which only the anchor state carries
-    ...(fork === ForkName.heze ? {HEZE_FORK_VERSION: anchorState.fork.currentVersion} : {}),
     ...loadSpecTestConfig(testCaseDir),
   };
   const beaconConfig = createBeaconConfig(testCaseConfig, anchorState.genesisValidatorsRoot);
@@ -756,7 +755,7 @@ async function validateMessageForTopic(
 
     case GossipType.randao_commitment_registration: {
       const signedRegistration = rejectOnInvalidSerializedBytes(() =>
-        ssz.heze.SignedRandaoCommitmentRegistration.deserialize(bytes)
+        ssz.eip8321.SignedRandaoCommitmentRegistration.deserialize(bytes)
       );
       await validateGossipRandaoCommitmentRegistration(chain, signedRegistration);
       // Mirror gossip handler: insert into pool so duplicate detection works

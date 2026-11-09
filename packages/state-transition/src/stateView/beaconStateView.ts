@@ -52,7 +52,7 @@ import {computeAttestationsRewards} from "../rewards/attestationsRewards.js";
 import {computeBlockRewards} from "../rewards/blockRewards.js";
 import {computeSyncCommitteeRewards} from "../rewards/syncCommitteeRewards.js";
 import {StateTransitionModules, StateTransitionOpts, processSlots, stateTransition} from "../stateTransition.js";
-import {CachedBeaconStateHeze} from "../types.js";
+import {CachedBeaconStateEip8321} from "../types.js";
 import {getEffectiveBalanceIncrementsZeroInactive} from "../util/balance.js";
 import {getBlockRootAtSlot} from "../util/blockRoot.js";
 import {computeAnchorCheckpoint} from "../util/computeAnchorCheckpoint.js";
@@ -523,17 +523,17 @@ export class BeaconStateView implements IBeaconStateViewLatestFork {
   }
 
   getRandaoCommitment(validatorIndex: ValidatorIndex): Bytes32 {
-    if (this.config.getForkSeq(this.cachedState.slot) < ForkSeq.heze) {
-      throw new Error("Randao commitments are not supported before Heze");
+    if (this.config.getForkSeq(this.cachedState.slot) < ForkSeq.eip8321) {
+      throw new Error("Randao commitments are not supported before Eip8321");
     }
-    return (this.cachedState as CachedBeaconStateHeze).randaoCommitments.get(validatorIndex);
+    return (this.cachedState as CachedBeaconStateEip8321).randaoCommitments.get(validatorIndex);
   }
 
   hasPendingRandaoCommitment(validatorIndex: ValidatorIndex): boolean {
-    if (this.config.getForkSeq(this.cachedState.slot) < ForkSeq.heze) {
-      throw new Error("Randao commitments are not supported before Heze");
+    if (this.config.getForkSeq(this.cachedState.slot) < ForkSeq.eip8321) {
+      throw new Error("Randao commitments are not supported before Eip8321");
     }
-    const {pendingRandaoCommitments} = this.cachedState as CachedBeaconStateHeze;
+    const {pendingRandaoCommitments} = this.cachedState as CachedBeaconStateEip8321;
     for (let i = 0; i < pendingRandaoCommitments.length; i++) {
       if (pendingRandaoCommitments.getReadonly(i).validatorIndex === validatorIndex) {
         return true;

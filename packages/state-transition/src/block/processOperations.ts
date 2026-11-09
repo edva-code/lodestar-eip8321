@@ -1,12 +1,12 @@
 import {ForkPreHeze, ForkSeq} from "@lodestar/params";
-import {BeaconBlockBody, Slot, capella, electra, gloas, heze} from "@lodestar/types";
+import {BeaconBlockBody, Slot, capella, eip8321, electra, gloas} from "@lodestar/types";
 import {BeaconStateTransitionMetrics} from "../metrics.js";
 import {
   CachedBeaconStateAllForks,
   CachedBeaconStateCapella,
+  CachedBeaconStateEip8321,
   CachedBeaconStateElectra,
   CachedBeaconStateGloas,
-  CachedBeaconStateHeze,
   CachedBeaconStatePreHeze,
 } from "../types.js";
 import {getEth1DepositCount} from "../util/deposit.js";
@@ -146,12 +146,12 @@ export function processOperations(
     timer?.();
   }
 
-  if (fork >= ForkSeq.heze) {
+  if (fork >= ForkSeq.eip8321) {
     const timer = metrics?.processOperationsStepTime.startTimer({
       step: ProcessOperationsStep.processRandaoCommitmentRegistration,
     });
-    for (const registration of (body as heze.BeaconBlockBody).randaoCommitmentRegistrations) {
-      processRandaoCommitmentRegistration(state as CachedBeaconStateHeze, registration, opts.verifySignatures);
+    for (const registration of (body as eip8321.BeaconBlockBody).randaoCommitmentRegistrations) {
+      processRandaoCommitmentRegistration(state as CachedBeaconStateEip8321, registration, opts.verifySignatures);
     }
     timer?.();
   }

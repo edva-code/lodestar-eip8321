@@ -20,8 +20,8 @@ import {ZERO_HASH} from "../constants/index.js";
 import {
   CachedBeaconStateAllForks,
   CachedBeaconStateAltair,
+  CachedBeaconStateEip8321,
   CachedBeaconStateElectra,
-  CachedBeaconStateHeze,
   CachedBeaconStatePreHeze,
 } from "../types.js";
 import {
@@ -153,8 +153,8 @@ export function addValidatorToRegistry(
     stateAltair.currentEpochParticipation.push(0);
   }
 
-  if (fork >= ForkSeq.heze) {
-    (state as CachedBeaconStateHeze).randaoCommitments.push(ZERO_HASH);
+  if (fork >= ForkSeq.eip8321) {
+    (state as CachedBeaconStateEip8321).randaoCommitments.push(ZERO_HASH);
   }
 
   state.balances.push(amount);

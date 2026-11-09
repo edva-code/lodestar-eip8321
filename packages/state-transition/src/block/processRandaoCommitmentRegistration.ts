@@ -1,13 +1,13 @@
 import {COMMITMENT_REGISTRATION_DELAY} from "@lodestar/params";
-import {Bytes32, ValidatorIndex, heze, ssz} from "@lodestar/types";
+import {Bytes32, ValidatorIndex, eip8321, ssz} from "@lodestar/types";
 import {byteArrayEquals} from "@lodestar/utils";
 import {ZERO_HASH} from "../constants/constants.js";
 import {verifyRandaoCommitmentRegistrationSignature} from "../signatureSets/index.js";
-import {CachedBeaconStateHeze} from "../types.js";
+import {CachedBeaconStateEip8321} from "../types.js";
 
 export function processRandaoCommitmentRegistration(
-  state: CachedBeaconStateHeze,
-  signedRegistration: heze.SignedRandaoCommitmentRegistration,
+  state: CachedBeaconStateEip8321,
+  signedRegistration: eip8321.SignedRandaoCommitmentRegistration,
   verifySignature = true
 ): void {
   const {validatorIndex, commitment} = signedRegistration.message;
@@ -28,7 +28,11 @@ export function processRandaoCommitmentRegistration(
   queueRandaoCommitment(state, validatorIndex, commitment);
 }
 
-export function queueRandaoCommitment(state: CachedBeaconStateHeze, index: ValidatorIndex, commitment: Bytes32): void {
+export function queueRandaoCommitment(
+  state: CachedBeaconStateEip8321,
+  index: ValidatorIndex,
+  commitment: Bytes32
+): void {
   // ponytail: linear scan per registration, fine while the queue holds at most ~3 epochs of registrations
   for (let i = 0; i < state.pendingRandaoCommitments.length; i++) {
     if (state.pendingRandaoCommitments.getReadonly(i).validatorIndex === index) {
@@ -37,7 +41,7 @@ export function queueRandaoCommitment(state: CachedBeaconStateHeze, index: Valid
   }
 
   state.pendingRandaoCommitments.push(
-    ssz.heze.PendingRandaoCommitment.toViewDU({
+    ssz.eip8321.PendingRandaoCommitment.toViewDU({
       validatorIndex: index,
       commitment,
       activationEpoch: state.epochCtx.epoch + COMMITMENT_REGISTRATION_DELAY,

@@ -1,8 +1,8 @@
 import {MAX_RANDAO_COMMITMENT_REGISTRATIONS, ZERO_HASH} from "@lodestar/params";
-import {Bytes32, ValidatorIndex, heze} from "@lodestar/types";
+import {Bytes32, ValidatorIndex, eip8321} from "@lodestar/types";
 import {byteArrayEquals} from "@lodestar/utils";
 
-type SignedRegistration = heze.SignedRandaoCommitmentRegistration;
+type SignedRegistration = eip8321.SignedRandaoCommitmentRegistration;
 
 export type RandaoCommitmentStateView = {
   validatorCount: number;

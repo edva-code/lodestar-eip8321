@@ -105,6 +105,7 @@ function getSpecCriticalParams(localConfig: ChainConfig): Record<keyof ConfigWit
   const fuluForkRelevant = localConfig.FULU_FORK_EPOCH < Infinity;
   const gloasForkRelevant = localConfig.GLOAS_FORK_EPOCH < Infinity;
   const hezeForkRelevant = localConfig.HEZE_FORK_EPOCH < Infinity;
+  const eip8321ForkRelevant = localConfig.EIP8321_FORK_EPOCH < Infinity;
 
   return {
     // # Config
@@ -149,6 +150,9 @@ function getSpecCriticalParams(localConfig: ChainConfig): Record<keyof ConfigWit
     // heze
     HEZE_FORK_VERSION: hezeForkRelevant,
     HEZE_FORK_EPOCH: hezeForkRelevant,
+    // eip8321
+    EIP8321_FORK_VERSION: eip8321ForkRelevant,
+    EIP8321_FORK_EPOCH: eip8321ForkRelevant,
 
     // Time parameters
     SECONDS_PER_SLOT: false, // Deprecated
@@ -348,8 +352,8 @@ function getSpecCriticalParams(localConfig: ChainConfig): Record<keyof ConfigWit
     INCLUSION_LIST_COMMITTEE_SIZE: hezeForkRelevant,
     MAX_SIGNED_EXECUTION_PAYLOAD_BID_SIZE_HEZE: false,
     MAX_SIGNED_INCLUSION_LIST_SIZE: false,
-    COMMITMENT_REGISTRATION_DELAY: hezeForkRelevant,
-    MAX_RANDAO_COMMITMENT_REGISTRATIONS: hezeForkRelevant,
+    COMMITMENT_REGISTRATION_DELAY: eip8321ForkRelevant,
+    MAX_RANDAO_COMMITMENT_REGISTRATIONS: eip8321ForkRelevant,
 
     // FastConfirmationRule
     CONFIRMATION_BYZANTINE_THRESHOLD: false,

@@ -678,7 +678,7 @@ export class NativeBeaconStateView implements IBeaconStateViewLatestFork {
     return new NativeBeaconStateView(this.config, this.binding.processSlots(slot, opts));
   }
 
-  // ─── heze ────────────────────────────────────────────────────────────────
+  // ─── eip8321 ─────────────────────────────────────────────────────────────
 
   getRandaoCommitment(_validatorIndex: ValidatorIndex): Bytes32 {
     throw new Error("getRandaoCommitment is not supported by the native state view yet");

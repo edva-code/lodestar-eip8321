@@ -3,7 +3,7 @@ import {createBeaconConfig, createChainForkConfig} from "@lodestar/config";
 import {config as mainnetConfig} from "@lodestar/config/default";
 import {SLOTS_PER_EPOCH} from "@lodestar/params";
 import {ZERO_HASH, hashChainStep} from "@lodestar/state-transition";
-import {Bytes32, ValidatorIndex, heze} from "@lodestar/types";
+import {Bytes32, ValidatorIndex, eip8321} from "@lodestar/types";
 import {toHex} from "@lodestar/utils";
 import {RandaoHashChainRepository} from "../../../src/repositories/index.js";
 import {RandaoCommitmentService} from "../../../src/services/randaoCommitment.js";
@@ -38,7 +38,7 @@ describe("RandaoHashChainRepository", () => {
 });
 
 describe("RandaoCommitmentService", () => {
-  const hezeEpoch = 2;
+  const eip8321Epoch = 2;
   const config = createBeaconConfig(
     createChainForkConfig({
       ...mainnetConfig,
@@ -49,7 +49,8 @@ describe("RandaoCommitmentService", () => {
       ELECTRA_FORK_EPOCH: 0,
       FULU_FORK_EPOCH: 0,
       GLOAS_FORK_EPOCH: 0,
-      HEZE_FORK_EPOCH: hezeEpoch,
+      HEZE_FORK_EPOCH: 0,
+      EIP8321_FORK_EPOCH: eip8321Epoch,
     }),
     ZERO_HASH
   );
@@ -79,7 +80,7 @@ describe("RandaoCommitmentService", () => {
         _pubkey: string,
         index: ValidatorIndex,
         commitment: Bytes32
-      ): Promise<heze.SignedRandaoCommitmentRegistration> => ({
+      ): Promise<eip8321.SignedRandaoCommitmentRegistration> => ({
         message: {validatorIndex: index, commitment},
         signature: Buffer.alloc(96, 0x01),
       })
@@ -96,16 +97,16 @@ describe("RandaoCommitmentService", () => {
   const tickEpoch = (epoch: number) => clock.tickEpochFns(epoch, new AbortController().signal);
 
   describe("registration", () => {
-    it("does nothing before heze", async () => {
+    it("does nothing before eip8321", async () => {
       mockCommitment(ZERO_HASH);
-      await tickEpoch(hezeEpoch - 1);
+      await tickEpoch(eip8321Epoch - 1);
       expect(api.beacon.getStateRandaoCommitment).not.toHaveBeenCalled();
       expect(api.beacon.submitPoolRandaoCommitmentRegistrations).not.toHaveBeenCalled();
     });
 
     it("persists a new secret before submitting its chain tip", async () => {
       mockCommitment(ZERO_HASH);
-      await tickEpoch(hezeEpoch);
+      await tickEpoch(eip8321Epoch);
 
       const stored = await repository.get(pubkey);
       expect(stored?.length).toBe(HASH_CHAIN_LENGTH);
@@ -114,7 +115,7 @@ describe("RandaoCommitmentService", () => {
         pubkeyHex,
         validatorIndex,
         expectedTip,
-        hezeEpoch * SLOTS_PER_EPOCH
+        eip8321Epoch * SLOTS_PER_EPOCH
       );
       const {registrations} = api.beacon.submitPoolRandaoCommitmentRegistrations.mock.calls[0][0];
       expect(registrations.map((r) => r.message)).toEqual([{validatorIndex, commitment: expectedTip}]);
@@ -123,32 +124,32 @@ describe("RandaoCommitmentService", () => {
     it("reuses a stored secret", async () => {
       await repository.set(pubkey, chain);
       mockCommitment(ZERO_HASH);
-      await tickEpoch(hezeEpoch);
+      await tickEpoch(eip8321Epoch);
       expect(signRandaoCommitmentRegistration).toHaveBeenCalledWith(
         pubkeyHex,
         validatorIndex,
         tip,
-        hezeEpoch * SLOTS_PER_EPOCH
+        eip8321Epoch * SLOTS_PER_EPOCH
       );
     });
 
     it("submits once and does not resubmit on later epochs", async () => {
       mockCommitment(ZERO_HASH);
-      await tickEpoch(hezeEpoch);
-      await tickEpoch(hezeEpoch + 1);
+      await tickEpoch(eip8321Epoch);
+      await tickEpoch(eip8321Epoch + 1);
       expect(api.beacon.submitPoolRandaoCommitmentRegistrations).toHaveBeenCalledOnce();
     });
 
     it("skips a validator with a pending registration", async () => {
       mockCommitment(ZERO_HASH, true);
-      await tickEpoch(hezeEpoch);
+      await tickEpoch(eip8321Epoch);
       expect(signRandaoCommitmentRegistration).not.toHaveBeenCalled();
       expect(api.beacon.submitPoolRandaoCommitmentRegistrations).not.toHaveBeenCalled();
     });
 
     it("skips an already registered validator", async () => {
       mockCommitment(tip);
-      await tickEpoch(hezeEpoch);
+      await tickEpoch(eip8321Epoch);
       expect(signRandaoCommitmentRegistration).not.toHaveBeenCalled();
       expect(api.beacon.submitPoolRandaoCommitmentRegistrations).not.toHaveBeenCalled();
     });

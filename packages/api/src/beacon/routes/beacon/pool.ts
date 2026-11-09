@@ -8,8 +8,8 @@ import {
   SingleAttestation,
   Slot,
   capella,
+  eip8321,
   electra,
-  heze,
   phase0,
   ssz,
 } from "@lodestar/types";
@@ -38,7 +38,7 @@ const ProposerSlashingListType = ArrayOf(ssz.phase0.ProposerSlashing);
 const SignedVoluntaryExitListType = ArrayOf(ssz.phase0.SignedVoluntaryExit);
 const SignedBLSToExecutionChangeListType = ArrayOf(ssz.capella.SignedBLSToExecutionChange);
 const SyncCommitteeMessageListType = ArrayOf(ssz.altair.SyncCommitteeMessage);
-const SignedRandaoCommitmentRegistrationListType = ArrayOf(ssz.heze.SignedRandaoCommitmentRegistration);
+const SignedRandaoCommitmentRegistrationListType = ArrayOf(ssz.eip8321.SignedRandaoCommitmentRegistration);
 const PayloadAttestationListType = new ProgressiveListCompositeType(ssz.gloas.PayloadAttestation, {
   typeName: "PayloadAttestations",
 });
@@ -220,7 +220,7 @@ export type Endpoints = {
    */
   submitPoolRandaoCommitmentRegistrations: Endpoint<
     "POST",
-    {registrations: heze.SignedRandaoCommitmentRegistration[]},
+    {registrations: eip8321.SignedRandaoCommitmentRegistration[]},
     {body: unknown},
     EmptyResponseData,
     EmptyMeta

@@ -328,6 +328,7 @@ export const engineSszTypes = {
   [ForkName.fulu]: fulu,
   [ForkName.gloas]: gloas,
   [ForkName.heze]: gloas,
+  [ForkName.eip8321]: gloas,
 };
 
 export type PayloadStatusSsz = ValueOf<typeof PayloadStatus>;
@@ -344,6 +345,7 @@ export const executionForkName: Record<ForkPostBellatrix, ExecutionForkName | nu
   [ForkName.fulu]: "osaka",
   [ForkName.gloas]: "amsterdam",
   [ForkName.heze]: null,
+  [ForkName.eip8321]: null,
 };
 
 export enum PayloadStatusCode {

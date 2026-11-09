@@ -150,7 +150,7 @@ export function getGossipSSZType(topic: GossipTopic) {
     case GossipType.inclusion_list:
       return ssz.heze.SignedInclusionList;
     case GossipType.randao_commitment_registration:
-      return ssz.heze.SignedRandaoCommitmentRegistration;
+      return ssz.eip8321.SignedRandaoCommitmentRegistration;
   }
 }
 
@@ -306,6 +306,9 @@ export function getCoreTopicsAtFork(
 
   if (ForkSeq[fork] >= ForkSeq.heze) {
     topics.push({type: GossipType.inclusion_list});
+  }
+
+  if (ForkSeq[fork] >= ForkSeq.eip8321) {
     topics.push({type: GossipType.randao_commitment_registration});
   }
 

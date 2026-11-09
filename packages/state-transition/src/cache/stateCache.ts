@@ -9,6 +9,7 @@ import {
   BeaconStateBellatrix,
   BeaconStateCapella,
   BeaconStateDeneb,
+  BeaconStateEip8321,
   BeaconStateElectra,
   BeaconStateExecutions,
   BeaconStateFulu,
@@ -140,6 +141,7 @@ export type CachedBeaconStateElectra = CachedBeaconState<BeaconStateElectra>;
 export type CachedBeaconStateFulu = CachedBeaconState<BeaconStateFulu>;
 export type CachedBeaconStateGloas = CachedBeaconState<BeaconStateGloas>;
 export type CachedBeaconStateHeze = CachedBeaconState<BeaconStateHeze>;
+export type CachedBeaconStateEip8321 = CachedBeaconState<BeaconStateEip8321>;
 
 export type CachedBeaconStateAllForks = CachedBeaconState<BeaconStateAllForks>;
 export type CachedBeaconStateExecutions = CachedBeaconState<BeaconStateExecutions>;

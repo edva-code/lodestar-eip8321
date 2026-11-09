@@ -19,6 +19,7 @@ const ELECTRA_FORK_EPOCH = 2;
 const FULU_FORK_EPOCH = 3;
 const GLOAS_FORK_EPOCH = 4;
 const HEZE_FORK_EPOCH = 5;
+const EIP8321_FORK_EPOCH = 6;
 const config = createChainForkConfig({
   ...defaultChainConfig,
   CAPELLA_FORK_EPOCH,
@@ -27,6 +28,7 @@ const config = createChainForkConfig({
   FULU_FORK_EPOCH,
   GLOAS_FORK_EPOCH,
   HEZE_FORK_EPOCH,
+  EIP8321_FORK_EPOCH,
 });
 
 const slots: Record<ForkPostCapella, number> = {
@@ -36,6 +38,7 @@ const slots: Record<ForkPostCapella, number> = {
   fulu: computeStartSlotAtEpoch(FULU_FORK_EPOCH),
   gloas: computeStartSlotAtEpoch(GLOAS_FORK_EPOCH),
   heze: computeStartSlotAtEpoch(HEZE_FORK_EPOCH),
+  eip8321: computeStartSlotAtEpoch(EIP8321_FORK_EPOCH),
 };
 
 type BlockTestSet<F extends ForkPostCapella> = {

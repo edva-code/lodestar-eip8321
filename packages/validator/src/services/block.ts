@@ -432,7 +432,7 @@ export class BlockProposingService {
   };
 
   private async getHashChainReveal(pubkeyHex: PubkeyHex, slot: Slot): Promise<Bytes32 | undefined> {
-    if (this.randaoCommitmentService === null || this.config.getForkSeq(slot) < ForkSeq.heze) return undefined;
+    if (this.randaoCommitmentService === null || this.config.getForkSeq(slot) < ForkSeq.eip8321) return undefined;
     const validatorIndex = this.validatorStore.getValidatorIndex(pubkeyHex);
     if (validatorIndex === undefined) return undefined;
     try {

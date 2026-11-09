@@ -37,6 +37,7 @@ export const ELECTRA_FORK_EPOCH = 20;
 export const FULU_FORK_EPOCH = 30;
 export const GLOAS_FORK_EPOCH = 40;
 export const HEZE_FORK_EPOCH = 50;
+export const EIP8321_FORK_EPOCH = 60;
 export const config = createChainForkConfig({
   ...defaultChainConfig,
   CAPELLA_FORK_EPOCH,
@@ -45,6 +46,7 @@ export const config = createChainForkConfig({
   FULU_FORK_EPOCH,
   GLOAS_FORK_EPOCH,
   HEZE_FORK_EPOCH,
+  EIP8321_FORK_EPOCH,
   // keep the wall-clock retention window at epoch-count semantics across the heze fork
   SLOT_DURATION_MS_HEZE: defaultChainConfig.SLOT_DURATION_MS,
 });
@@ -65,6 +67,7 @@ export const slots: Record<ForkPostCapella, number> = {
   fulu: computeStartSlotAtEpoch(FULU_FORK_EPOCH),
   gloas: computeStartSlotAtEpoch(GLOAS_FORK_EPOCH),
   heze: computeStartSlotAtEpoch(HEZE_FORK_EPOCH),
+  eip8321: computeStartSlotAtEpoch(EIP8321_FORK_EPOCH),
 };
 
 /**

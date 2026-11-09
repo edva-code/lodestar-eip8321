@@ -1,19 +1,9 @@
-import {
-  BitVectorType,
-  ContainerType,
-  ProgressiveContainerType,
-  ProgressiveListCompositeType,
-  VectorBasicType,
-} from "@chainsafe/ssz";
-import {
-  INCLUSION_LIST_COMMITTEE_SIZE,
-  MAX_RANDAO_COMMITMENT_REGISTRATIONS,
-  VALIDATOR_REGISTRY_LIMIT,
-} from "@lodestar/params";
+import {BitVectorType, ContainerType, ProgressiveContainerType, VectorBasicType} from "@chainsafe/ssz";
+import {INCLUSION_LIST_COMMITTEE_SIZE} from "@lodestar/params";
 import {ssz as gloasSsz} from "../gloas/index.js";
 import {ssz as primitiveSsz} from "../primitive/index.js";
 
-const {Slot, Root, BLSSignature, ValidatorIndex, Bytes32, Epoch} = primitiveSsz;
+const {Slot, Root, BLSSignature, ValidatorIndex} = primitiveSsz;
 
 function activeFields(count: number, gaps: number[] = []): boolean[] {
   return Array.from({length: count}, (_, index) => !gaps.includes(index));
@@ -70,43 +60,6 @@ export const SignedExecutionPayloadBid = new ContainerType(
 export const DataColumnSidecar = gloasSsz.DataColumnSidecar;
 export const DataColumnSidecars = gloasSsz.DataColumnSidecars;
 
-export const RandaoCommitmentRegistration = new ContainerType(
-  {
-    validatorIndex: ValidatorIndex,
-    commitment: Bytes32,
-  },
-  {typeName: "RandaoCommitmentRegistration", jsonCase: "eth2"}
-);
-
-export const SignedRandaoCommitmentRegistration = new ContainerType(
-  {
-    message: RandaoCommitmentRegistration,
-    signature: BLSSignature,
-  },
-  {typeName: "SignedRandaoCommitmentRegistration", jsonCase: "eth2"}
-);
-
-export const PendingRandaoCommitment = new ContainerType(
-  {
-    validatorIndex: ValidatorIndex,
-    commitment: Bytes32,
-    activationEpoch: Epoch,
-  },
-  {typeName: "PendingRandaoCommitment", jsonCase: "eth2"}
-);
-
-export const RandaoCommitmentRegistrations = new ProgressiveListCompositeType(SignedRandaoCommitmentRegistration, {
-  typeName: "RandaoCommitmentRegistrations",
-  limit: MAX_RANDAO_COMMITMENT_REGISTRATIONS,
-});
-export const RandaoCommitments = new ProgressiveListCompositeType(Bytes32, {
-  typeName: "RandaoCommitments",
-  limit: VALIDATOR_REGISTRY_LIMIT,
-});
-export const PendingRandaoCommitments = new ProgressiveListCompositeType(PendingRandaoCommitment, {
-  typeName: "PendingRandaoCommitments",
-});
-
 const {
   eth1Data: _eth1Data,
   eth1DataVotes: _eth1DataVotes,
@@ -119,11 +72,9 @@ export const BeaconState = new ProgressiveContainerType(
   {
     ...gloasBeaconStateFields,
     latestExecutionPayloadBid: ExecutionPayloadBid, // [Modified in Heze:EIP7805]
-    randaoCommitments: RandaoCommitments, // [New in Heze:EIP8321]
-    pendingRandaoCommitments: PendingRandaoCommitments, // [New in Heze:EIP8321]
   },
   // [Modified in Heze:EIP8015] gaps keep the surviving generalized indices stable
-  activeFields(48, [8, 9, 10, 28]),
+  activeFields(46, [8, 9, 10, 28]),
   {typeName: "BeaconState", jsonCase: "eth2"}
 );
 
@@ -133,11 +84,9 @@ export const BeaconBlockBody = new ProgressiveContainerType(
   {
     ...gloasBeaconBlockBodyFields,
     signedExecutionPayloadBid: SignedExecutionPayloadBid, // [Modified in Heze:EIP7805]
-    hashChainReveal: Bytes32, // [New in Heze:EIP8321]
-    randaoCommitmentRegistrations: RandaoCommitmentRegistrations, // [New in Heze:EIP8321]
   },
   // [Modified in Heze:EIP8015] gaps keep the surviving generalized indices stable
-  activeFields(15, [1, 6]),
+  activeFields(13, [1, 6]),
   {typeName: "BeaconBlockBody", jsonCase: "eth2", cachePermanentRootStruct: true}
 );
 

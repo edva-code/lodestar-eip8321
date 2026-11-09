@@ -3,7 +3,7 @@ import {ApiClient} from "@lodestar/api";
 import {BeaconConfig} from "@lodestar/config";
 import {ForkSeq} from "@lodestar/params";
 import {IClock, ZERO_HASH, computeStartSlotAtEpoch} from "@lodestar/state-transition";
-import {Bytes32, Epoch, Slot, ValidatorIndex, heze} from "@lodestar/types";
+import {Bytes32, Epoch, Slot, ValidatorIndex, eip8321} from "@lodestar/types";
 import {byteArrayEquals, fromHex} from "@lodestar/utils";
 import {RandaoHashChainRepository} from "../repositories/index.js";
 import {PubkeyHex} from "../types.js";
@@ -12,7 +12,7 @@ import {LoggerVc} from "../util/index.js";
 import {ValidatorStore} from "./validatorStore.js";
 
 /**
- * EIP-8321: registers a hash chain RANDAO commitment for every local validator once Heze is active,
+ * EIP-8321: registers a hash chain RANDAO commitment for every local validator once Eip8321 is active,
  * and computes the hash chain reveal a validator must include when proposing.
  */
 export class RandaoCommitmentService {
@@ -61,9 +61,9 @@ export class RandaoCommitmentService {
   }
 
   private registerCommitments = async (epoch: Epoch): Promise<void> => {
-    if (this.config.getForkSeq(computeStartSlotAtEpoch(epoch)) < ForkSeq.heze) return;
+    if (this.config.getForkSeq(computeStartSlotAtEpoch(epoch)) < ForkSeq.eip8321) return;
 
-    const registrations: heze.SignedRandaoCommitmentRegistration[] = [];
+    const registrations: eip8321.SignedRandaoCommitmentRegistration[] = [];
     for (const validatorIndex of this.validatorStore.getAllLocalIndices()) {
       if (this.submitted.has(validatorIndex)) continue;
       const pubkeyHex = this.validatorStore.getPubkeyOfIndex(validatorIndex);
@@ -97,7 +97,7 @@ export class RandaoCommitmentService {
     pubkeyHex: PubkeyHex,
     validatorIndex: ValidatorIndex,
     signingSlot: Slot
-  ): Promise<heze.SignedRandaoCommitmentRegistration | null> {
+  ): Promise<eip8321.SignedRandaoCommitmentRegistration | null> {
     const {commitment, pending} = (
       await this.api.beacon.getStateRandaoCommitment({stateId: "head", validatorIndex})
     ).value();

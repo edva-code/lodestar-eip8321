@@ -49,6 +49,7 @@ import {
   ValidatorIndex,
   altair,
   bellatrix,
+  eip8321,
   gloas,
   heze,
   phase0,
@@ -1058,11 +1059,11 @@ export class ValidatorStore {
     validatorIndex: ValidatorIndex,
     commitment: Bytes32,
     signingSlot: Slot
-  ): Promise<heze.SignedRandaoCommitmentRegistration> {
+  ): Promise<eip8321.SignedRandaoCommitmentRegistration> {
     // Signed against the genesis fork version so the registration stays valid across forks
     const domain = this.config.getDomainAtFork(ForkName.phase0, DOMAIN_RANDAO_COMMITMENT_REGISTRATION);
-    const registration: heze.RandaoCommitmentRegistration = {validatorIndex, commitment};
-    const signingRoot = computeSigningRoot(ssz.heze.RandaoCommitmentRegistration, registration, domain);
+    const registration: eip8321.RandaoCommitmentRegistration = {validatorIndex, commitment};
+    const signingRoot = computeSigningRoot(ssz.eip8321.RandaoCommitmentRegistration, registration, domain);
 
     const signableMessage: SignableMessage = {
       type: SignableMessageType.RANDAO_COMMITMENT_REGISTRATION,

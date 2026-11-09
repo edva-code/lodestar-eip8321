@@ -366,6 +366,12 @@ export function initializeBeaconStateFromEth1(
     stateHeze.fork.currentVersion = config.HEZE_FORK_VERSION;
   }
 
+  if (fork >= ForkSeq.eip8321) {
+    const stateEip8321 = state as CompositeViewDU<typeof ssz.eip8321.BeaconState>;
+    stateEip8321.fork.previousVersion = config.EIP8321_FORK_VERSION;
+    stateEip8321.fork.currentVersion = config.EIP8321_FORK_VERSION;
+  }
+
   state.commit();
 
   return state;

@@ -1,6 +1,6 @@
 import {BeaconConfig} from "@lodestar/config";
 import {ForkSeq} from "@lodestar/params";
-import {IndexedAttestation, SignedBeaconBlock, altair, capella, gloas, heze} from "@lodestar/types";
+import {IndexedAttestation, SignedBeaconBlock, altair, capella, eip8321, gloas} from "@lodestar/types";
 import {byteArrayEquals} from "@lodestar/utils";
 import {getSyncCommitteeSignatureSet} from "../block/processSyncCommittee.js";
 import {SyncCommitteeCache} from "../cache/syncCommitteeCache.js";
@@ -51,8 +51,8 @@ export function getBlockSignatureSets(
 
   // A non-zero hash chain reveal means processRandao takes the hash chain path, which has no BLS reveal to verify
   const hasHashChainReveal =
-    fork >= ForkSeq.heze &&
-    !byteArrayEquals((signedBlock as heze.SignedBeaconBlock).message.body.hashChainReveal, ZERO_HASH);
+    fork >= ForkSeq.eip8321 &&
+    !byteArrayEquals((signedBlock as eip8321.SignedBeaconBlock).message.body.hashChainReveal, ZERO_HASH);
 
   const signatureSets = [
     ...(hasHashChainReveal ? [] : [getRandaoRevealSignatureSet(config, signedBlock.message)]),
@@ -92,8 +92,10 @@ export function getBlockSignatureSets(
     }
   }
 
-  if (fork >= ForkSeq.heze) {
-    signatureSets.push(...getRandaoCommitmentRegistrationsSignatureSets(config, signedBlock as heze.SignedBeaconBlock));
+  if (fork >= ForkSeq.eip8321) {
+    signatureSets.push(
+      ...getRandaoCommitmentRegistrationsSignatureSets(config, signedBlock as eip8321.SignedBeaconBlock)
+    );
   }
 
   if (fork >= ForkSeq.gloas) {

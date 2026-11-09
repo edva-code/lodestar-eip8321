@@ -9,15 +9,15 @@ import {createCachedBeaconState} from "../../../src/index.js";
 
 describe("processPendingRandaoCommitments", () => {
   it("applies due commitments and keeps the rest in order", () => {
-    const config = getConfig(ForkName.heze);
-    const view = ssz.heze.BeaconState.defaultViewDU();
+    const config = getConfig(ForkName.eip8321);
+    const view = ssz.eip8321.BeaconState.defaultViewDU();
     for (let i = 0; i < 3; i++) view.randaoCommitments.push(new Uint8Array(32));
     const pending = [
       {validatorIndex: 0, commitment: new Uint8Array(32).fill(1), activationEpoch: 1},
       {validatorIndex: 1, commitment: new Uint8Array(32).fill(2), activationEpoch: 3},
       {validatorIndex: 2, commitment: new Uint8Array(32).fill(3), activationEpoch: 2},
     ];
-    for (const p of pending) view.pendingRandaoCommitments.push(ssz.heze.PendingRandaoCommitment.toViewDU(p));
+    for (const p of pending) view.pendingRandaoCommitments.push(ssz.eip8321.PendingRandaoCommitment.toViewDU(p));
     view.commit();
     const state = createCachedBeaconState(
       view,

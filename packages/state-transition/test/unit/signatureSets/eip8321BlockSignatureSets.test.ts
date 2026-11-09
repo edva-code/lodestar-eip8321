@@ -1,14 +1,14 @@
 import {describe, expect, it} from "vitest";
 import {createBeaconConfig, createChainForkConfig} from "@lodestar/config";
 import {DOMAIN_RANDAO_COMMITMENT_REGISTRATION, ForkName, SYNC_COMMITTEE_SIZE} from "@lodestar/params";
-import {heze, ssz} from "@lodestar/types";
+import {eip8321, ssz} from "@lodestar/types";
 import {SyncCommitteeCache} from "../../../src/cache/syncCommitteeCache.js";
 import {G2_POINT_AT_INFINITY, ZERO_HASH} from "../../../src/constants/index.js";
 import {getBlockSignatureSets} from "../../../src/signatureSets/index.js";
 import {IBeaconStateView} from "../../../src/stateView/interface.js";
 import {SignatureSetType, computeSigningRoot} from "../../../src/util/index.js";
 
-describe("signatureSets / heze block", () => {
+describe("signatureSets / eip8321 block", () => {
   const config = createBeaconConfig(
     createChainForkConfig({
       ALTAIR_FORK_EPOCH: 0,
@@ -19,12 +19,13 @@ describe("signatureSets / heze block", () => {
       FULU_FORK_EPOCH: 0,
       GLOAS_FORK_EPOCH: 0,
       HEZE_FORK_EPOCH: 0,
+      EIP8321_FORK_EPOCH: 0,
     }),
     ZERO_HASH
   );
   const proposerIndex = 2;
   const blsReveal = Buffer.alloc(96, 0xaa);
-  const registration: heze.SignedRandaoCommitmentRegistration = {
+  const registration: eip8321.SignedRandaoCommitmentRegistration = {
     message: {validatorIndex: 5, commitment: Buffer.alloc(32, 0xcd)},
     signature: Buffer.alloc(96, 0xbb),
   };
@@ -36,8 +37,8 @@ describe("signatureSets / heze block", () => {
   // No exits or payload attestations in the block, so the state is never read
   const state = {} as unknown as IBeaconStateView;
 
-  const makeSignedBlock = (hashChainReveal: Uint8Array, randaoReveal: Uint8Array): heze.SignedBeaconBlock => {
-    const body = ssz.heze.BeaconBlockBody.defaultValue();
+  const makeSignedBlock = (hashChainReveal: Uint8Array, randaoReveal: Uint8Array): eip8321.SignedBeaconBlock => {
+    const body = ssz.eip8321.BeaconBlockBody.defaultValue();
     body.randaoReveal = randaoReveal;
     body.hashChainReveal = hashChainReveal;
     body.syncAggregate.syncCommitteeSignature = G2_POINT_AT_INFINITY;
@@ -48,7 +49,7 @@ describe("signatureSets / heze block", () => {
     };
   };
 
-  const getSets = (signedBlock: heze.SignedBeaconBlock) =>
+  const getSets = (signedBlock: eip8321.SignedBeaconBlock) =>
     getBlockSignatureSets(config, syncCommitteeCache, state, signedBlock, []);
 
   it("includes the BLS randao reveal when there is no hash chain reveal", () => {
@@ -72,7 +73,7 @@ describe("signatureSets / heze block", () => {
     expect(registrationSet).toEqual({
       type: SignatureSetType.indexed,
       index: registration.message.validatorIndex,
-      signingRoot: computeSigningRoot(ssz.heze.RandaoCommitmentRegistration, registration.message, domain),
+      signingRoot: computeSigningRoot(ssz.eip8321.RandaoCommitmentRegistration, registration.message, domain),
       signature: registration.signature,
     });
   });

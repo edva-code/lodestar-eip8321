@@ -10,10 +10,10 @@ import {
   CachedBeaconStateAllForks,
   CachedBeaconStateAltair,
   CachedBeaconStateCapella,
+  CachedBeaconStateEip8321,
   CachedBeaconStateElectra,
   CachedBeaconStateFulu,
   CachedBeaconStateGloas,
-  CachedBeaconStateHeze,
   CachedBeaconStatePhase0,
   CachedBeaconStatePreHeze,
   EpochTransitionCache,
@@ -131,11 +131,11 @@ export function processEpoch(
     timer?.();
   }
 
-  if (fork >= ForkSeq.heze) {
+  if (fork >= ForkSeq.eip8321) {
     const timer = metrics?.epochTransitionStepTime.startTimer({
       step: EpochTransitionStep.processPendingRandaoCommitments,
     });
-    processPendingRandaoCommitments(state as CachedBeaconStateHeze);
+    processPendingRandaoCommitments(state as CachedBeaconStateEip8321);
     timer?.();
   }
 

@@ -8,9 +8,9 @@ import {
   CachedBeaconStateAllForks,
   CachedBeaconStateBellatrix,
   CachedBeaconStateCapella,
+  CachedBeaconStateEip8321,
   CachedBeaconStateElectra,
   CachedBeaconStateGloas,
-  CachedBeaconStateHeze,
   CachedBeaconStatePreHeze,
   ExecutionPayloadStatus,
   IndexedBuilderState,
@@ -22,9 +22,9 @@ import {
   altair,
   bellatrix,
   capella,
+  eip8321,
   electra,
   gloas,
-  heze,
   phase0,
   ssz,
   sszTypesFor,
@@ -158,16 +158,16 @@ const operationFns: Record<string, BlockProcessFn<CachedBeaconStateAllForks>> = 
     );
   },
 
-  randao: (state, testCase: BaseSpecTest & {block: heze.BeaconBlock}) => {
+  randao: (state, testCase: BaseSpecTest & {block: eip8321.BeaconBlock}) => {
     blockFns.processRandao(state, testCase.block, shouldVerify(testCase));
   },
 
   randao_commitment_registration: (
     state,
-    testCase: BaseSpecTest & {randao_commitment_registration: heze.SignedRandaoCommitmentRegistration}
+    testCase: BaseSpecTest & {randao_commitment_registration: eip8321.SignedRandaoCommitmentRegistration}
   ) => {
     blockFns.processRandaoCommitmentRegistration(
-      state as CachedBeaconStateHeze,
+      state as CachedBeaconStateEip8321,
       testCase.randao_commitment_registration,
       shouldVerify(testCase)
     );
@@ -240,7 +240,7 @@ const operations: TestRunnerFn<OperationsTestCase, BeaconStateAllForks> = (fork,
           : ssz.gloas.SignedExecutionPayloadBid,
         builder_deposit_request: ssz.gloas.BuilderDepositRequest,
         builder_exit_request: ssz.gloas.BuilderExitRequest,
-        randao_commitment_registration: ssz.heze.SignedRandaoCommitmentRegistration,
+        randao_commitment_registration: ssz.eip8321.SignedRandaoCommitmentRegistration,
       },
       shouldError: (testCase) => testCase.post === undefined,
       // Only an ssz list limit violation is an expected input error, anything else is a decode bug

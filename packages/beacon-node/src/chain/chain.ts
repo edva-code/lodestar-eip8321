@@ -31,9 +31,9 @@ import {
   computeStartSlotAtEpoch,
   getEffectiveBalancesFromStateBytes,
   isStatePostAltair,
+  isStatePostEip8321,
   isStatePostElectra,
   isStatePostGloas,
-  isStatePostHeze,
 } from "@lodestar/state-transition";
 import {
   BeaconBlock,
@@ -1926,10 +1926,10 @@ export class BeaconChain implements IBeaconChain {
 
     if (headState) {
       this.opPool.pruneAll(blockResult.block, headState);
-      if (isStatePostHeze(headState)) {
-        const hezeState = headState;
+      if (isStatePostEip8321(headState)) {
+        const eip8321State = headState;
         this.randaoCommitmentRegistrationPool.prune((registration) =>
-          isRandaoCommitmentRegistrationIncludable(hezeState, registration)
+          isRandaoCommitmentRegistrationIncludable(eip8321State, registration)
         );
       }
     }

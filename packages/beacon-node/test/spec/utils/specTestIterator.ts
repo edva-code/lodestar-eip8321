@@ -2,17 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 import {beforeEach, describe, it} from "vitest";
 import {pubkeyCache} from "@chainsafe/lodestar-z/pubkeys";
-import {defaultChainConfig} from "@lodestar/config";
-import {ACTIVE_PRESET, ForkName, PresetName, isForkPostGloas} from "@lodestar/params";
+import {ForkName, isForkPostGloas} from "@lodestar/params";
 import {describeDirectorySpecTest} from "@lodestar/spec-test-util";
-import {fromHex} from "@lodestar/utils";
 import {nativeStateTransition} from "./stateTransition.js";
 import {RunnerType, TestRunner} from "./types.js";
-
-// Pyspec builds EIP-8321 as a feature fork on top of heze with its own fork version, which signs every
-// generated vector. Lodestar ships EIP-8321 inside heze, so those vectors run as heze with that version.
-const EIP8321_FORK_DIR = "eip8321";
-const EIP8321_FORK_VERSION = ACTIVE_PRESET === PresetName.minimal ? "0xe8321001" : "0xe8321000";
 
 let nativeStateTransitionPromise: Promise<typeof import("@chainsafe/lodestar-z/state-transition")> | null = null;
 
@@ -96,21 +89,12 @@ export const defaultSkipOpts: SkipOpts = {
     /^gloas\/ssz_static\/PartialDataColumn(GroupID|PartsMetadata|Sidecar)\/.*$/,
     /^heze\/ssz_static\/PartialDataColumn(GroupID|PartsMetadata|Sidecar)\/.*$/,
     /^heze\/fork_choice_compliance\/.*/,
-    // TODO-HEZE: EIP-8321 adds fields to the Heze BeaconState and BeaconBlockBody. The pinned
-    // consensus-specs vectors predate them, so every vector that decodes either container fails on
-    // layout. Re-enable when the vectors include EIP-8321.
-    /^heze\/(epoch_processing|fast_confirmation|finality|fork|fork_choice|operations|random|rewards|sanity|transition)\/.*$/,
-    /^heze\/ssz_static\/(BeaconState|BeaconBlockBody|BeaconBlock|SignedBeaconBlock)\/.*$/,
-    /^heze\/light_client\/single_merkle_proof\/.*$/,
-    /^heze\/networking\/gossip_(attester_slashing|bls_to_execution_change|inclusion_list|proposer_slashing|sync_committee_contribution_and_proof|sync_committee_message)\/.*$/,
-    // Pyspec upgrades a heze pre-state without the EIP-8321 fields, a layout Lodestar's heze does not have.
-    /^eip8321\/fork\/.*$/,
   ],
   skippedTests: [
     // The pyspec test primes its `seen` set in code, nothing in the vector carries that state.
     /\/?gossip_randao_commitment_registration__ignore_already_seen$/,
     // The vector rewrites state.fork.current_version to a pre-EIP-8321 value, but Lodestar derives the
-    // fork from the slot and the fork schedule, so the head state is still heze.
+    // fork from the slot and the fork schedule, so the head state is still eip8321.
     /\/?gossip_randao_commitment_registration__ignore_pre_eip8321_head_state$/,
   ],
   skippedRunners: [],
@@ -157,15 +141,8 @@ export function specTestIterator(
   opts: SkipOpts = defaultSkipOpts
 ): void {
   const forkStrs = readdirSyncSpec(configDirpath);
-  const eip8321Runners = forkStrs.includes(EIP8321_FORK_DIR)
-    ? readdirSyncSpec(path.join(configDirpath, EIP8321_FORK_DIR))
-    : [];
   for (const forkStr of forkStrs) {
-    let fork = forkStr as ForkName;
-    if (forkStr === EIP8321_FORK_DIR) {
-      fork = ForkName.heze;
-      defaultChainConfig.HEZE_FORK_VERSION = fromHex(EIP8321_FORK_VERSION);
-    }
+    const fork = forkStr as ForkName;
     if (
       opts?.skippedForks?.includes(forkStr) ||
       // lodestar-z does not support Gloas state transition yet
@@ -178,11 +155,6 @@ export function specTestIterator(
     const forkDirpath = path.join(configDirpath, forkStr);
     for (const testRunnerName of readdirSyncSpec(forkDirpath)) {
       if (opts?.skippedRunners?.includes(testRunnerName)) {
-        continue;
-      }
-      // Both run as heze with different fork versions, and the eip8321 vectors supersede the heze ones for
-      // every runner they provide. Heze still runs the rest, e.g. ssz_static which eip8321 does not ship.
-      if (forkStr === ForkName.heze && eip8321Runners.includes(testRunnerName)) {
         continue;
       }
 

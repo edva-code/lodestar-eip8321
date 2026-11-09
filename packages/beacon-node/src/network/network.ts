@@ -24,6 +24,7 @@ import {
   altair,
   capella,
   deneb,
+  eip8321,
   fulu,
   gloas,
   heze,
@@ -441,10 +442,10 @@ export class Network implements INetwork {
     return Promise.any(publishChanges);
   }
 
-  async publishRandaoCommitmentRegistration(registration: heze.SignedRandaoCommitmentRegistration): Promise<number> {
+  async publishRandaoCommitmentRegistration(registration: eip8321.SignedRandaoCommitmentRegistration): Promise<number> {
     const boundary = this.config.getForkBoundaryAtEpoch(this.clock.currentEpoch);
-    if (ForkSeq[boundary.fork] < ForkSeq.heze) {
-      throw Error("No heze+ fork active yet to publish randaoCommitmentRegistration");
+    if (ForkSeq[boundary.fork] < ForkSeq.eip8321) {
+      throw Error("No eip8321+ fork active yet to publish randaoCommitmentRegistration");
     }
 
     return this.publishGossip<GossipType.randao_commitment_registration>(

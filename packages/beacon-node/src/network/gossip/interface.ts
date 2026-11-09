@@ -15,6 +15,7 @@ import {
   altair,
   capella,
   deneb,
+  eip8321,
   gloas,
   heze,
   phase0,
@@ -119,7 +120,7 @@ export type GossipTypeMap = {
   [GossipType.execution_payload_bid]: gloas.SignedExecutionPayloadBid;
   [GossipType.proposer_preferences]: gloas.SignedProposerPreferences;
   [GossipType.inclusion_list]: heze.SignedInclusionList;
-  [GossipType.randao_commitment_registration]: heze.SignedRandaoCommitmentRegistration;
+  [GossipType.randao_commitment_registration]: eip8321.SignedRandaoCommitmentRegistration;
 };
 
 export type GossipFnByType = {
@@ -156,7 +157,7 @@ export type GossipFnByType = {
   ) => Promise<void> | void;
   [GossipType.inclusion_list]: (signedInclusionList: heze.SignedInclusionList) => Promise<void> | void;
   [GossipType.randao_commitment_registration]: (
-    registration: heze.SignedRandaoCommitmentRegistration
+    registration: eip8321.SignedRandaoCommitmentRegistration
   ) => Promise<void> | void;
 };
 

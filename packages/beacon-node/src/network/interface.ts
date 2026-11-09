@@ -31,6 +31,7 @@ import {
   altair,
   capella,
   deneb,
+  eip8321,
   fulu,
   gloas,
   heze,
@@ -109,7 +110,7 @@ export interface INetwork extends INetworkCorePublic {
   ): Promise<{sentPeers: number; alreadyPublished: boolean}>;
   publishVoluntaryExit(voluntaryExit: phase0.SignedVoluntaryExit): Promise<number>;
   publishBlsToExecutionChange(blsToExecutionChange: capella.SignedBLSToExecutionChange): Promise<number>;
-  publishRandaoCommitmentRegistration(registration: heze.SignedRandaoCommitmentRegistration): Promise<number>;
+  publishRandaoCommitmentRegistration(registration: eip8321.SignedRandaoCommitmentRegistration): Promise<number>;
   publishProposerSlashing(proposerSlashing: phase0.ProposerSlashing): Promise<number>;
   publishAttesterSlashing(attesterSlashing: AttesterSlashing): Promise<number>;
   publishSyncCommitteeSignature(signature: altair.SyncCommitteeMessage, subnet: SubnetID): Promise<number>;

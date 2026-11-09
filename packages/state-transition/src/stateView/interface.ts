@@ -6,6 +6,7 @@ import {
   ForkPostBellatrix,
   ForkPostCapella,
   ForkPostDeneb,
+  ForkPostEip8321,
   ForkPostElectra,
   ForkPostFulu,
   ForkPostGloas,
@@ -15,6 +16,7 @@ import {
   isForkPostBellatrix,
   isForkPostCapella,
   isForkPostDeneb,
+  isForkPostEip8321,
   isForkPostElectra,
   isForkPostFulu,
   isForkPostGloas,
@@ -308,6 +310,11 @@ export interface IBeaconStateViewGloas extends IBeaconStateViewFulu {
 /** Heze+ state fields — use isStatePostHeze() guard */
 export interface IBeaconStateViewHeze extends IBeaconStateViewGloas {
   forkName: ForkPostHeze;
+}
+
+/** Eip8321+ state fields — use isStatePostEip8321() guard */
+export interface IBeaconStateViewEip8321 extends IBeaconStateViewHeze {
+  forkName: ForkPostEip8321;
   /* EIP-8321: active hash-chain RANDAO commitment of a validator, all zeros if not registered */
   getRandaoCommitment(validatorIndex: ValidatorIndex): Bytes32;
   /* EIP-8321: true if the validator has a registration waiting in pendingRandaoCommitments */
@@ -316,12 +323,12 @@ export interface IBeaconStateViewHeze extends IBeaconStateViewGloas {
 
 /**
  * Type constraint for the concrete BeaconStateView class.
- * Requires all fields from the latest fork interface (IBeaconStateViewHeze) but keeps
+ * Requires all fields from the latest fork interface (IBeaconStateViewEip8321) but keeps
  * forkName as ForkName since the class wraps any fork's state.
  * Sub-interfaces retain their narrowed forkName discriminants for caller-side type guards.
  */
 export type IBeaconStateViewLatestFork = Omit<
-  IBeaconStateViewHeze,
+  IBeaconStateViewEip8321,
   "forkName" | "latestExecutionPayloadHeader" | "payloadBlockNumber"
 > & {
   forkName: ForkName;
@@ -429,4 +436,8 @@ export function isStatePostGloas(state: IBeaconStateView): state is IBeaconState
 
 export function isStatePostHeze(state: IBeaconStateView): state is IBeaconStateViewHeze {
   return isForkPostHeze(state.forkName);
+}
+
+export function isStatePostEip8321(state: IBeaconStateView): state is IBeaconStateViewEip8321 {
+  return isForkPostEip8321(state.forkName);
 }

@@ -1,7 +1,7 @@
 import {ssz} from "@lodestar/types";
-import {CachedBeaconStateHeze} from "../types.js";
+import {CachedBeaconStateEip8321} from "../types.js";
 
-export function processPendingRandaoCommitments(state: CachedBeaconStateHeze): void {
+export function processPendingRandaoCommitments(state: CachedBeaconStateEip8321): void {
   if (state.pendingRandaoCommitments.length === 0) {
     return;
   }
@@ -16,5 +16,5 @@ export function processPendingRandaoCommitments(state: CachedBeaconStateHeze): v
     }
   }
 
-  state.pendingRandaoCommitments = ssz.heze.PendingRandaoCommitments.toViewDU(remaining);
+  state.pendingRandaoCommitments = ssz.eip8321.PendingRandaoCommitments.toViewDU(remaining);
 }

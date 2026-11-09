@@ -11,6 +11,7 @@ import {
   RootHex,
   Slot,
   altair,
+  eip8321,
   gloas,
   heze,
   phase0,
@@ -94,7 +95,7 @@ export type SignableMessage =
   | {type: SignableMessageType.PROPOSER_PREFERENCES; data: gloas.ProposerPreferences}
   | {type: SignableMessageType.BUILDER_REQUEST_AUTH; data: gloas.BuilderRequestAuth}
   | {type: SignableMessageType.INCLUSION_LIST; data: heze.InclusionList}
-  | {type: SignableMessageType.RANDAO_COMMITMENT_REGISTRATION; data: heze.RandaoCommitmentRegistration};
+  | {type: SignableMessageType.RANDAO_COMMITMENT_REGISTRATION; data: eip8321.RandaoCommitmentRegistration};
 
 const requiresForkInfo: Record<SignableMessageType, boolean> = {
   [SignableMessageType.AGGREGATION_SLOT]: true,
@@ -331,7 +332,7 @@ function serializerSignableMessagePayload(config: BeaconConfig, payload: Signabl
     case SignableMessageType.INCLUSION_LIST:
       return {inclusion_list: ssz.heze.InclusionList.toJson(payload.data)};
     case SignableMessageType.RANDAO_COMMITMENT_REGISTRATION:
-      return {randao_commitment_registration: ssz.heze.RandaoCommitmentRegistration.toJson(payload.data)};
+      return {randao_commitment_registration: ssz.eip8321.RandaoCommitmentRegistration.toJson(payload.data)};
   }
 }
 

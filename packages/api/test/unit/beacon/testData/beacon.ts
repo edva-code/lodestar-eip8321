@@ -151,7 +151,7 @@ export const testData: GenericServerTestCases<Endpoints> = {
   },
   getPoolRandaoCommitmentRegistrations: {
     args: undefined,
-    res: {data: [ssz.heze.SignedRandaoCommitmentRegistration.defaultValue()]},
+    res: {data: [ssz.eip8321.SignedRandaoCommitmentRegistration.defaultValue()]},
   },
   submitPoolAttestationsV2: {
     args: {signedAttestations: [ssz.electra.SingleAttestation.defaultValue()]},
@@ -174,7 +174,7 @@ export const testData: GenericServerTestCases<Endpoints> = {
     res: undefined,
   },
   submitPoolRandaoCommitmentRegistrations: {
-    args: {registrations: [ssz.heze.SignedRandaoCommitmentRegistration.defaultValue()]},
+    args: {registrations: [ssz.eip8321.SignedRandaoCommitmentRegistration.defaultValue()]},
     res: undefined,
   },
   submitPoolSyncCommitteeSignatures: {
