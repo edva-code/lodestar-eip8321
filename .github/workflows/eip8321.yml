@@ -15,7 +15,7 @@ permissions:
 
 on:
   push:
-    branches: [devnet-2-real]
+    branches: [devnet-2-real, lodestar-eip8321-interop]
   workflow_dispatch:
     inputs:
       generate:
@@ -188,15 +188,15 @@ jobs:
             packages/beacon-node/test/unit/api/impl/beacon/pool/randaoCommitmentRegistrations.test.ts \
             packages/beacon-node/test/unit/chain/opPools/randaoCommitmentRegistrationPool.test.ts \
             packages/beacon-node/test/unit/chain/produceBlock/applyHashChainReveal.test.ts \
-            packages/beacon-node/test/unit/chain/produceBlock/setHezeRandaoFields.test.ts \
+            packages/beacon-node/test/unit/chain/produceBlock/setEip8321RandaoFields.test.ts \
             packages/beacon-node/test/unit/chain/validation/randaoCommitmentRegistration.test.ts \
             packages/beacon-node/test/unit/network/gossip/topic.test.ts \
             packages/state-transition/test/unit/block/addValidatorToRegistry.test.ts \
             packages/state-transition/test/unit/block/processRandao.test.ts \
             packages/state-transition/test/unit/block/processRandaoCommitmentRegistration.test.ts \
             packages/state-transition/test/unit/epoch/processPendingRandaoCommitments.test.ts \
-            packages/state-transition/test/unit/signatureSets/hezeBlockSignatureSets.test.ts \
-            packages/state-transition/test/unit/slot/upgradeStateToHeze.test.ts \
+            packages/state-transition/test/unit/signatureSets/eip8321BlockSignatureSets.test.ts \
+            packages/state-transition/test/unit/slot/upgradeStateToEip8321.test.ts \
             packages/state-transition/test/unit/util/blake3.test.ts \
             packages/validator/test/unit/services/randaoCommitment.test.ts \
             packages/validator/test/unit/util/hashChain.test.ts \
